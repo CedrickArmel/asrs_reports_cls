@@ -3,4 +3,5 @@
 
 
 __all__ = ["components",
+           "pipeline",
            "nodes"]

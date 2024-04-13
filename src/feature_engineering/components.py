@@ -1,4 +1,4 @@
-from kfp.dsl import component, InputPath, OutputPath, Input, Output, Dataset
+from kfp.dsl import component, OutputPath, Input, Output, Dataset
 
 
 @component
@@ -6,6 +6,15 @@ def make_data_available(source_bucket_name: str,
                         source_directory: str,
                         destination_bucket_name: str,
                         destination_directory: OutputPath(str)) -> None:
+    """Imports the raw data from the storage location and store them where \
+        they can be available for the pipeline job.
+
+    Args:
+        source_bucket_name (str): raw-data-location-bucket-name.
+        source_directory (str): raw-data-location-directory.
+        destination_bucket_name (str): destination-bucket-name.
+        destination_directory (OutputPath): destination-directory.
+    """
     from utilitis.gcpstorage import copy_many_blobs
     copy_many_blobs(bucket_name=source_bucket_name,
                     folder_path=source_directory,
@@ -45,7 +54,13 @@ def feature_engineering(train_set: Input[Dataset],
 @component
 def store_features(train_features: Input[Dataset],
                    test_features: Input[Dataset]) -> None:
-    
+    """Load the features datasets and insert them in a hopsworks feature store.
+
+    Args:
+        train_features (Input[Dataset]): input/train/features/location.
+        test_features (Input[Dataset]): input/test/features/location.
+    """
+
     from dotenv import load_dotenv
     import hopsworks
     import pandas as pd
