@@ -22,21 +22,49 @@ def feature_engineering(train_set: Input[Dataset],
     from omegaconf import OmegaConf
     from feature_engineering.nodes import drop_useless, encode_cell
 
-    cfg = OmegaConf.load("../conf/parameters.yaml")
-    fe = cfg.feature_engineering
+    fe_cfg = OmegaConf.load("../conf/base/feature_engineering.yaml")
 
     train_data = pd.read_pickle(train_set.path)[0]
     test_data = pd.read_pickle(test_set.path)[0]
-    train_data, test_data = drop_useless(fe.columns_to_keep_from_raw,
+    train_data, test_data = drop_useless(fe_cfg.columns_to_keep_from_raw,
                                          train_data=train_data,
                                          test_data=test_data)
     train_data = train_data.dropna(axis=0,
-                                   subset=fe.columns_to_keep_from_raw)
-    test_data = test_data.dropna(axis=0, subset=fe.columns_to_keep_from_raw)
-    train_data[fe.target] = train_data[fe.target].apply(
-        lambda cell: encode_cell(cell, fe.labels))
-    test_data[fe.target] = test_data[fe.target].apply(
-        lambda cell: encode_cell(cell, fe.labels)
+                                   subset=fe_cfg.columns_to_keep_from_raw)
+    test_data = test_data.dropna(axis=0, subset=fe_cfg.
+                                 columns_to_keep_from_raw)
+    train_data[fe_cfg.target] = train_data[fe_cfg.target].apply(
+        lambda cell: encode_cell(cell, fe_cfg.labels))
+    test_data[fe_cfg.target] = test_data[fe_cfg.target].apply(
+        lambda cell: encode_cell(cell, fe_cfg.labels)
     )
     train_data.to_parquet(train_data_out.path)
     test_data.to_parquet(test_data_out.path)
+
+
+@component
+def store_features(train_features: Input[Dataset],
+                   test_features: Input[Dataset]) -> None:
+    
+    from dotenv import load_dotenv
+    import hopsworks
+    import pandas as pd
+
+    load_dotenv()
+
+    project = hopsworks.login()
+    fs = project.get_feature_store()
+
+    train_data = pd.read_parquet(train_features.path)
+    test_data = pd.read_parquet(test_features.path)
+
+    train_data_fg = fs.\
+        get_or_create_feature_group(name="train_features",
+                                    description="Features to train the model",
+                                    online_enabled=True)
+    test_data_fg = fs.\
+        get_or_create_feature_group(name="test_features",
+                                    description="Features to evaluate the model",
+                                    online_enabled=True)
+    train_data_fg.insert(train_data)
+    test_data_fg.insert(test_data)

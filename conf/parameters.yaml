@@ -1,4 +1,0 @@
-feature_engineering:
-  columns_to_keep_from_raw: ['Narrative', 'Anomaly']
-  labels: [""]
-  target: ["Anomaly"]
