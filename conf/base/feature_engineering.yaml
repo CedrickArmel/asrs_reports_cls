@@ -1,0 +1,10 @@
+columns_to_keep_from_raw: ['Narrative', 'Anomaly']
+labels: [""]
+target: ["Anomaly"]
+pipeline_name: "feature_engineering"
+train_dataset: "train_final.pkl"
+test_dataset: "test_final.pkl"
+train_feat: "train_feat.parquet"
+test_feat: "test_feat.parquet"
+package_path: "feature_engineering.json"
+enable_caching: True
