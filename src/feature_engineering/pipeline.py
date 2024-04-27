@@ -1,66 +1,50 @@
 import argparse
-from datetime import datetime
 import os
+from pathlib import Path
+import sys
 
 from dotenv import load_dotenv
-from google.cloud import aiplatform
-from kfp import compiler
-from kfp.dsl import pipeline, OutputPath
+from kfp import compiler, Client
+from kfp.dsl import pipeline
 from omegaconf import OmegaConf
+from wonderwords import RandomWord
 
-from feature_engineering.components import (feature_engineering,
-                                            make_data_available,
-                                            store_features)
+current_dir = str(Path(__file__).parent).split('/')
+for i in range(len(current_dir)+1):
+    sys.path.append('/'.join(current_dir[:i]))
+from feature_engineering.\
+    components import (feature_engineering,
+                       store_features)
 
 load_dotenv()
-
-fe_cfg = OmegaConf.load("../conf/base/feature_engineering.yaml")
-
-DEST_BUCKET_NAME = os.getenv("DEST_BUCKET_NAME")
-DEST_DIR = os.getenv("DEST_DIR")
+fe_cfg = OmegaConf.load("conf/base/feature_engineering.yaml")
+EXPERIMENT = fe_cfg.pipeline.experiment
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 GCP_PROJECT_REGION = os.getenv("GCP_PROJECT_REGION")
-PIPELINE_NAME = fe_cfg.pipeline_name
-PIPELINES_ROOT = os.getenv("PIPELINES_ROOT")
-SOURCE_BUCKET_NAME = os.getenv("SOURCE_BUCKET_NAME")
-SOURCE_DIR = os.getenv("SOURCE_DIR")
+KUBEFLOW_HOST = os.getenv("KUBEFLOW_HOST")
+KUBEFLOW_PIPELINES_ROOT = os.getenv("KUBEFLOW_PIPELINES_ROOT")
+PIPELINE_NAME = fe_cfg.pipeline.name
+RAW_SOURCE = os.getenv("RAW_SOURCE")
+
+TRAIN_DATASET = os.path.join(str(RAW_SOURCE), fe_cfg.components.train_dataset)
+TEST_DATASET = os.path.join(str(RAW_SOURCE), fe_cfg.components.test_dataset)
 
 
-@pipeline(name=PIPELINE_NAME,
-          pipeline_root=PIPELINES_ROOT)
-def feature_engineering_pipeline(source_bucket_name: str,
-                                 source_directory: str,
-                                 destination_bucket_name: str,
-                                 destination_directory: OutputPath(str)):
+@pipeline(pipeline_root=KUBEFLOW_PIPELINES_ROOT)
+def feature_engineering_pipeline():
     """Feature engineering pipeline.
-
-    Args:
-        source_bucket_name (str): raw-data-location-bucket-name.
-        source_directory (str): raw-data-location-directory.
-        destination_bucket_name (str): destination-bucket-name.
-        destination_directory (OutputPath): destination-directory.
     """
-    make_data_available(
-        source_bucket_name=source_bucket_name,
-        source_directory=source_directory,
-        destination_bucket_name=destination_bucket_name,
-        destination_directory=destination_directory)
-
-    feature_engineering_op = feature_engineering(
-        train_set=fe_cfg.train_dataset,
-        test_set=fe_cfg.test_dataset,
-        train_data_out=fe_cfg.train_feat,
-        test_data_out=fe_cfg.est_feat)
-
+    feature_engineering_op = feature_engineering(train_set=TRAIN_DATASET,
+                                                 test_set=TEST_DATASET)
     store_features(
         train_features=feature_engineering_op.outputs["train_data_out"],
         test_features=feature_engineering_op.outputs["test_data_out"])
 
 
 if __name__ == "__main__":
-    aiplatform.init(project=GCP_PROJECT_ID, location=GCP_PROJECT_REGION)
-
-    TIMESTAMP = datetime.now().strftime("%Y%m%d-%H%M")
+    r = RandomWord()
+    words = r.random_words(amount=2, word_max_length=10)
+    JOB_NAME = "-".join(words)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--compile-only',
@@ -68,20 +52,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     compiler.Compiler().compile(pipeline_func=feature_engineering_pipeline,
-                                package_path=fe_cfg.package_path)
+                                package_path=fe_cfg.pipeline.pkg_path)
 
     if not args.compile_only:
-        run = aiplatform.PipelineJob(
-            project=GCP_PROJECT_ID,
-            location=GCP_PROJECT_REGION,
-            display_name=PIPELINE_NAME,
-            template_path=fe_cfg.package_path,
-            job_id=f"{PIPELINE_NAME}-{TIMESTAMP}",
-            pipeline_root=PIPELINES_ROOT,
-            enable_caching=fe_cfg.enable_caching,
-            parameter_values=dict(
-                source_bucket_name=SOURCE_BUCKET_NAME,
-                source_directory=SOURCE_DIR,
-                destination_bucket_name=DEST_BUCKET_NAME,
-                destination_directory=DEST_DIR))
-        run.submit()
+        client = Client(host=KUBEFLOW_HOST)
+        experiment = client.create_experiment(name=EXPERIMENT)
+        client.run_pipeline(
+            experiment_id=experiment.experiment_id,
+            job_name=JOB_NAME,
+            pipeline_root=KUBEFLOW_PIPELINES_ROOT,
+            pipeline_package_path=fe_cfg.pipeline.pkg_path)
