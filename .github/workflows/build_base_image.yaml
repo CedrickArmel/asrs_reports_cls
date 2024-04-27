@@ -18,12 +18,15 @@ jobs:
         name: Create .env file based on Github Secrets
         uses: ozaytsev86/create-env-file-action@v1
         with:
+          GCP_PIPELINES_ROOT: ${{ secrets.GCP_PIPELINES_ROOT }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           GCP_PROJECT_REGION: ${{ secrets.GCP_PROJECT_REGION }}
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+          IMAGE: ${{ secrets.IMAGE }}
           KUBEFLOW_HOST: ${{ secrets.KUBEFLOW_HOST }}
-          PIPELINES_ROOT: ${{ secrets.PIPELINES_ROOT }}
+          KUBEFLOW_PIPELINES_ROOT: ${{ secrets.KUBEFLOW_PIPELINES_ROOT }}
+          RAW_SOURCE: ${{ secrets.RAW_SOURCE }}
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
