@@ -15,6 +15,16 @@ jobs:
         name: Checkout
         uses: actions/checkout@v4
       -
+        name: Create .env file based on Github Secrets
+        uses: ozaytsev86/create-env-file-action@v1
+        with:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_PROJECT_REGION: ${{ secrets.GCP_PROJECT_REGION }}
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+          KUBEFLOW_HOST: ${{ secrets.KUBEFLOW_HOST }}
+          PIPELINES_ROOT: ${{ secrets.PIPELINES_ROOT }}
+      -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       -
