@@ -46,6 +46,6 @@ jobs:
           context: .
           file: Dockerfile.base
           push: true
-          tags: drxc/alpine_asrs_base:latest
-          cache-from: type=registry,ref=drxc/alpine_asrs_base:buildcache
-          cache-to: type=registry,ref=drxc/alpine_asrs_base:buildcache,mode=max
+          tags: drxc/asrs_base:latest
+          cache-from: type=registry,ref=drxc/asrs_base:buildcache
+          cache-to: type=registry,ref=drxc/asrs_base:buildcache,mode=max
