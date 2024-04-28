@@ -1,15 +1,16 @@
-FROM ubuntu:latest
-RUN \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get update \
-    && apt-get install -y curl \
-    && apt-get install -y --no-install-recommends gcc python3-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.10.13-slim-bullseye
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+    ;
 RUN curl -sSL https://install.python-poetry.org | python3 - \
     && rm -rf /tmp/*
+ENV HOME=/home
 ENV PATH="/root/.local/bin:$PATH"
 COPY . $HOME/app/
 WORKDIR $HOME/app/
 RUN poetry install --without dev --no-root
+ENTRYPOINT [ "/bin/sh" ]
 ENV PYTHONPATH=/
