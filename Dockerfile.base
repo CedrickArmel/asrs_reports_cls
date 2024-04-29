@@ -13,5 +13,4 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY . $HOME/app/
 WORKDIR $HOME/app/
 RUN poetry install --without dev --no-root
-ENTRYPOINT [ "/bin/sh" ]
 ENV PYTHONPATH=/
