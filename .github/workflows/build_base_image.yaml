@@ -16,17 +16,16 @@ jobs:
         uses: actions/checkout@v4
       -
         name: Create .env file based on Github Secrets
-        uses: ozaytsev86/create-env-file-action@v1
-        with:
-          GCP_PIPELINES_ROOT: ${{ secrets.GCP_PIPELINES_ROOT }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_PROJECT_REGION: ${{ secrets.GCP_PROJECT_REGION }}
-          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
-          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
-          IMAGE: ${{ secrets.IMAGE }}
-          KUBEFLOW_HOST: ${{ secrets.KUBEFLOW_HOST }}
-          KUBEFLOW_PIPELINES_ROOT: ${{ secrets.KUBEFLOW_PIPELINES_ROOT }}
-          RAW_SOURCE: ${{ secrets.RAW_SOURCE }}
+        run: |
+          echo "GCP_PIPELINES_ROOT=${{ secrets.GCP_PIPELINES_ROOT }}" >> .env
+          echo "GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}" >> .env
+          echo "GCP_PROJECT_REGION=${{ secrets.GCP_PROJECT_REGION }}" >> .env
+          echo "HOPSWORKS_API_KEY=${{ secrets.HOPSWORKS_API_KEY }}" >> .env
+          echo "HOPSWORKS_PROJECT=${{ secrets.HOPSWORKS_PROJECT }}" >> .env
+          echo "IMAGE=${{ secrets.IMAGE }}" >> .env
+          echo "KUBEFLOW_HOST=${{ secrets.KUBEFLOW_HOST }}" >> .env
+          echo "KUBEFLOW_PIPELINES_ROOT=${{ secrets.KUBEFLOW_PIPELINES_ROOT }}" >> .env
+          echo "RAW_SOURCE=${{ secrets.RAW_SOURCE }}" >> .env
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
