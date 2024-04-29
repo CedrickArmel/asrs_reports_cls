@@ -1,5 +1,3 @@
-
-# Base for the project
 FROM python:3.10.13-slim-bullseye
 RUN set -eux; \
     apt-get update; \

@@ -42,6 +42,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           file: Dockerfile.base
           push: False
           tags: drxc/alpine_asrs_base:test
