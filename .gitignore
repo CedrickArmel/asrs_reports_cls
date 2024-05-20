@@ -1,8 +1,14 @@
 .python-version
 outputs
+local_outputs
 src/*/test.py
 *.json
 *.yaml
+conf/local/*
+*.csv
+src/*/local_run.py
+*.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,26 +1,19 @@
 import argparse
 import os
-from pathlib import Path
-import sys
 
 from dotenv import load_dotenv
 from kfp import compiler, Client
-from kfp.dsl import pipeline
+from kfp.dsl import (container_component, ContainerSpec, Dataset,
+                     importer, Input, Output, pipeline)
 from omegaconf import OmegaConf
 from wonderwords import RandomWord
-
-current_dir = str(Path(__file__).parent).split('/')
-for i in range(len(current_dir)+1):
-    sys.path.append('/'.join(current_dir[:i]))
-from feature_engineering.\
-    components import (feature_engineering,
-                       store_features)
 
 load_dotenv()
 fe_cfg = OmegaConf.load("conf/base/feature_engineering.yaml")
 EXPERIMENT = fe_cfg.pipeline.experiment
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 GCP_PROJECT_REGION = os.getenv("GCP_PROJECT_REGION")
+IMAGE = os.getenv("IMAGE")
 KUBEFLOW_HOST = os.getenv("KUBEFLOW_HOST")
 KUBEFLOW_PIPELINES_ROOT = os.getenv("KUBEFLOW_PIPELINES_ROOT")
 PIPELINE_NAME = fe_cfg.pipeline.name
@@ -30,13 +23,48 @@ TRAIN_DATASET = os.path.join(str(RAW_SOURCE), fe_cfg.components.train_dataset)
 TEST_DATASET = os.path.join(str(RAW_SOURCE), fe_cfg.components.test_dataset)
 
 
+@container_component
+def featureengineering(train_set: Input[Dataset],
+                       test_set: Input[Dataset],
+                       train_data_out: Output[Dataset],
+                       test_data_out: Output[Dataset]):
+    return ContainerSpec(
+        image=IMAGE,
+        command=["python"],
+        args=["src/feature_engineering/components.py",
+              "feature_engineering",
+              "--train-set", train_set.path,
+              "--test-set", test_set.path,
+              "--train-data-out", train_data_out.path,
+              "--test-data-out", test_data_out.path])
+
+
+@container_component
+def storefeatures(train_features: Input[Dataset],
+                  test_features: Input[Dataset]):
+    return ContainerSpec(
+        image=IMAGE,
+        command=["python"],
+        args=["src/feature_engineering/components.py",
+              "store_features",
+              "--train-features", train_features.path,
+              "--test-features", test_features.path])
+
+
 @pipeline(pipeline_root=KUBEFLOW_PIPELINES_ROOT)
 def feature_engineering_pipeline():
     """Feature engineering pipeline.
     """
-    feature_engineering_op = feature_engineering(train_set=TRAIN_DATASET,
-                                                 test_set=TEST_DATASET)
-    store_features(
+    train_set_op = importer(artifact_uri=TRAIN_DATASET,
+                            artifact_class=Dataset,
+                            reimport=False)
+    test_set_op = importer(artifact_uri=TEST_DATASET,
+                           artifact_class=Dataset,
+                           reimport=False)
+    feature_engineering_op = featureengineering(
+        train_set=train_set_op.output,
+        test_set=test_set_op.output)
+    storefeatures(
         train_features=feature_engineering_op.outputs["train_data_out"],
         test_features=feature_engineering_op.outputs["test_data_out"])
 
