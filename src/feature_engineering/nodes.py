@@ -18,10 +18,10 @@ def drop_useless(columns: List[str],
     return outputs
 
 
-def encode_cell(cell: pd.Series,
+def encode_cell(cell: str,
                 labels: List[str],
                 include_other: bool = False) -> pd.Series:
-    """Encode the multilabels cell such that the cell content is replaced by \n
+    """Encode the multilabels cell such that the cell content is replaced by \
     a list of same length as labels and containing 0/1.
 
     Args:
@@ -33,10 +33,12 @@ def encode_cell(cell: pd.Series,
         equal to number of element in labels.
     """
     cell_anomalies = [item.strip() for item in cell.split(';')]
-    splited_cell_anomalies = {label: any(item.startswith(label)
-                                         for item in cell_anomalies)
-                              for label in labels}
+    splited_cell_anomalies = {label: 1 if
+                              any(item.startswith(label)
+                                  for item in cell_anomalies)
+                              else 0 for label in labels}
     if include_other:
-        splited_cell_anomalies['Other'] = not any(splited_cell_anomalies.
-                                                  values())
-    return pd.Series(splited_cell_anomalies)
+        splited_cell_anomalies['Other'] = 1 if not any(splited_cell_anomalies.
+                                                       values()) else 0
+    encodings = list(splited_cell_anomalies.values())
+    return encodings

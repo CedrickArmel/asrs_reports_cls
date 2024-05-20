@@ -1,53 +1,45 @@
-
 """Defines the kfp components of the feature engineering pipeline."""
+import argparse
 import os
-from typing import Dict
+from pathlib import Path
+import sys
 
 from dotenv import load_dotenv
-from kfp.dsl import component, Input, Dataset, Output
+from gcsfs import GCSFileSystem
+import hopsworks
+from omegaconf import OmegaConf
+import pandas as pd
+
+current_dir = str(Path(__file__).parent).split('/')
+for i in range(len(current_dir)+1):
+    sys.path.append('/'.join(current_dir[:i]))
+
+from src.feature_engineering.nodes import drop_useless, encode_cell
+from src.utilitis.gcpstorage import copy_many_blobs
 
 load_dotenv()
-IMAGE = os.getenv("IMAGE")
+APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 
-@component(base_image=IMAGE)
-def feature_engineering(train_set: str,
-                        test_set: str,
-                        train_data_out: Output[Dataset],
-                        test_data_out: Output[Dataset]) -> None:
-    """KFP component that performs the feature engineering\
-        step of the pipeline.
+def featureengineering(train_set: str,
+                       test_set: str,
+                       train_data_out: str,
+                       test_data_out: str) -> None:
+    """Performs the feature engineering step of the pipeline.
 
     Args:
         train_set (str): /path/to/training_set/ or \
             gs://bucket/path/to/training_set/
         test_set (str): /path/to/validation_set/ or \
             gs://bucket/path/to/validation_set/
-        config (DictConfig): An OmegaConf configuration object.
-        train_data_out (Output[Dataset]): KFP component output object \
-            available at ${PIPELINE_ROOT}/train_data_out.path.\
-                See KFP documentation.
-        test_data_out (Output[Dataset]): KFP component output object\
-              available at ${PIPELINE_ROOT}/test_data_out.path.\
-                See KFP documentation.
+        train_data_out (str): /path/to/output/the/train/features/dataset
+        test_data_out (str): /path/to/output/the/test/features/dataset
     """
-    from pathlib import Path
-    import sys
-    current_dir = str(Path(__file__).parent).split('/')
-    for i in range(len(current_dir)+1):
-        sys.path.append('/'.join(current_dir[:i]))
-    
-    from dotenv import load_dotenv
-    from omegaconf import OmegaConf
-    import pandas as pd
-    from src.feature_engineering.nodes import drop_useless, encode_cell
-
-    load_dotenv()
+    GCSFileSystem(token=APPLICATION_CREDENTIALS)
     config = OmegaConf.load("conf/base/feature_engineering.yaml")
     columns = config.components.columns
     labels = config.components.labels
     target = config.components.target
-
     train_data = pd.read_pickle(train_set)[0]
     test_data = pd.read_pickle(test_set)[0]
     train_data, test_data = drop_useless(columns,
@@ -61,77 +53,95 @@ def feature_engineering(train_set: str,
         apply(lambda cell: encode_cell(cell, labels))
     test_data[target] = test_data[target].\
         apply(lambda cell: encode_cell(cell, labels))
-    train_data.to_parquet(train_data_out.path)
-    test_data.to_parquet(test_data_out.path)
+
+    if not os.path.exists(os.path.dirname(train_data_out)):
+        os.makedirs(os.path.dirname(train_data_out))
+    if not os.path.exists(os.path.dirname(test_data_out)):
+        os.makedirs(os.path.dirname(test_data_out))
+
+    with open(train_data_out, "wb") as f:
+        train_data.to_parquet(f)
+    with open(test_data_out, "wb") as f:
+        test_data.to_parquet(f)
 
 
-@component(base_image=IMAGE)
-def make_data_available(source_bucket_name: str,
-                        source_directory: str,
-                        destination_bucket_name: str,
-                        destination_directory: str) -> None:
-    """Imports the raw data from the storage location and store them where \
-        they can be available for the pipeline job.
-
-    Args:
-        source_bucket_name (str): raw-data-location-bucket-name.
-        source_directory (str): raw-data-location-directory.
-        destination_bucket_name (str): destination-bucket-name.
-        destination_directory (OutputPath): destination-directory.
-    """
-    from pathlib import Path
-    import sys
-    current_dir = str(Path(__file__).parent).split('/')
-    for i in range(len(current_dir)+1):
-        sys.path.append('/'.join(current_dir[:i]))
-
-    from dotenv import load_dotenv
-    from src.utilitis.gcpstorage import copy_many_blobs
-
-    load_dotenv()
-
-    copy_many_blobs(bucket_name=source_bucket_name,
-                    folder_path=source_directory,
-                    destination_bucket_name=destination_bucket_name,
-                    destination_folder_path=destination_directory)
-
-
-@component(base_image=IMAGE)
-def store_features(train_features: Input[Dataset],
-                   test_features: Input[Dataset]) -> None:
+def storefeatures(train_features: str,
+                  test_features: str) -> None:
     """Load the features datasets and insert them in a hopsworks feature store.
 
     Args:
-        train_features (Input[Dataset]): KFP component input object available\
-              at ${PIPELINE_ROOT}/train_features.path.
-        test_features (Input[Dataset]): KFP component input object available\
-              at ${PIPELINE_ROOT}/test_features.path.
+        train_features (str): /path/to/the/train/dataset.
+        test_features (Input[Dataset]): /path/to/the/train/dataset.
     """
-    from pathlib import Path
-    import sys
-    current_dir = str(Path(__file__).parent).split('/')
-    for i in range(len(current_dir)+1):
-        sys.path.append('/'.join(current_dir[:i]))
-
-    from dotenv import load_dotenv
-    import hopsworks
-    import pandas as pd
-
-    load_dotenv()
+    with open(train_features, "rb") as f:
+        train_data = pd.read_parquet(f)
+    with open(test_features, "rb") as f:
+        test_data = pd.read_parquet(f)
 
     project = hopsworks.login()
     fs = project.get_feature_store()
-
-    train_data = pd.read_parquet(train_features.path)
-    test_data = pd.read_parquet(test_features.path)
 
     train_data_fg = fs.\
         get_or_create_feature_group(name="train_features",
                                     description="Features to train the model",
                                     online_enabled=True)
     test_data_fg = fs.\
-        get_or_create_feature_group(name="test_features",
-                                    description="Features to evaluate the model",
-                                    online_enabled=True)
+        get_or_create_feature_group(
+            name="test_features",
+            description="Features to evaluate the model",
+            online_enabled=True)
     train_data_fg.insert(train_data)
     test_data_fg.insert(test_data)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog="Feature Engineering Pipeline components",
+        description="""Programme to call the components of the Feature \
+            Engineering Pipeline""")
+    subparsers = parser.add_subparsers(title="subcommands", dest="subcommand")
+
+    fe_parser = subparsers.add_parser(
+        "featureengineering",
+        help="Performs feature engineering step of the pipeline")
+    fe_parser.add_argument(
+        "--train-set",
+        required=True,
+        help="/path/to/training_set/ or gs://bucket/path/to/training_set/")
+    fe_parser.add_argument(
+        "--test-set",
+        required=True,
+        help="/path/to/validation_set/ or gs://bucket/path/to/validation_set/")
+    fe_parser.add_argument(
+        "--train-data-out",
+        required=True,
+        help="/path/to/output/the/train/features/dataset")
+    fe_parser.add_argument(
+        "--test-data-out",
+        required=True,
+        help="/path/to/output/the/test/features/dataset")
+
+    store_features_parser = subparsers.add_parser(
+        "storefeatures",
+        help="Inserts features in hopsworks feature store")
+    store_features_parser.add_argument(
+        "--train-features",
+        required=True,
+        help="/path/to/the/train/dataset")
+    store_features_parser.add_argument(
+        "--test-features",
+        required=True,
+        help="/path/to/the/test/dataset")
+
+    args = parser.parse_args()
+
+    if args.subcommand == "featureengineering":
+        featureengineering(args.train_set,
+                           args.test_set,
+                           args.train_data_out,
+                           args.test_data_out)
+    elif args.subcommand == "storefeatures":
+        storefeatures(args.train_features,
+                      args.test_features)
+    else:
+        parser.print_help()
