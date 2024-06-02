@@ -4,7 +4,7 @@ import argparse
 import os
 
 from dotenv import load_dotenv, dotenv_values
-from kfp import compiler, Client
+from kfp import Client, compiler
 from kfp.dsl import (container_component, ContainerSpec, Dataset,
                      importer, Input, Output, pipeline)
 from omegaconf import OmegaConf
