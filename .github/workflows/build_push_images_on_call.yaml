@@ -2,7 +2,19 @@ name: Reusable Build and Push images
 
 on:
   workflow_call:
-    secrets: inherit
+    secrets:
+      ARTIFACT_REGISTRY_TAG:
+        required: true
+      DOCKERHUB_CACHE_TAG:
+        required: true
+      DOCKERHUB_TAG:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+      DOCKERHUB_USERNAME:
+        required: true
+      REGION:
+        required: true
 
 jobs:
   build-base-image:
@@ -11,6 +23,7 @@ jobs:
       -
         name: Setup environment
         uses: ./.github/workflows/setup_environment_on_call.yaml
+        secrets: inherit
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -36,7 +49,7 @@ jobs:
           file: Dockerfile.base
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_TAG }}
+            ${{ secrets.DOCKERHUB_TAG }}
             ${{ secrets.ARTIFACT_REGISTRY_TAG }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_CACHE_TAG }}
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_CACHE_TAG }},mode=max
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }}
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }},mode=max

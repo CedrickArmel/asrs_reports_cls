@@ -2,7 +2,27 @@ name: Reusable environment Setup Workflow
 
 on:
   workflow_call:
-    secrets: inherit
+    secrets:
+      ARTIFACT_REGISTRY_TAG:
+        required: true
+      ENDPOINT:
+        required: true
+      GOOGLE_APPLICATION_CREDENTIALS:
+        required: true
+      HOPSWORKS_API_KEY:
+        required: true
+      HOPSWORKS_PROJECT:
+        required: true
+      PIPELINE_ROOT:
+        required: true
+      PROJECT_ID:
+        required: true
+      RAW_DATA:
+        required: true
+      REGION:
+        required: true
+      WIP:
+        required: true
 
 jobs:
   setup-environment:
@@ -32,6 +52,6 @@ jobs:
           echo "IMAGE=${{ secrets.ARTIFACT_REGISTRY_TAG }}" >> .env
           echo "PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }}" >> .env
           echo "PROJECT_ID=${{ secrets.PROJECT_ID }}" >> .env
-          echo "REGION=${{ secrets.REGION }}" >> .env
           echo "RAW_DATA=${{ secrets.RAW_DATA }}" >> .env
-      -
+          echo "REGION=${{ secrets.REGION }}" >> .env
+
