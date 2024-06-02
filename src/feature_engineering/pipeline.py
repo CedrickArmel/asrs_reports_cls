@@ -12,6 +12,7 @@ from wonderwords import RandomWord
 
 load_dotenv()
 fe_cfg = OmegaConf.load("conf/base/feature_engineering.yaml")
+
 ENDPOINT = os.getenv("ENDPOINT")
 EXPERIMENT = fe_cfg.pipeline.experiment
 IMAGE = os.getenv("IMAGE")
