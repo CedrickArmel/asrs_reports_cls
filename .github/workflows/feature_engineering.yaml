@@ -35,7 +35,8 @@ jobs:
       -
         name: Setup environment
         uses: ./.github/workflows/setup_environment_on_call.yaml
-        secrets: inherit
+        with:
+          secrets: inherit
       -
         name: Create venv and install requirements
         run: |
