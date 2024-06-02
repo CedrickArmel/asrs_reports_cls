@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     compiler.Compiler().compile(pipeline_func=feature_engineering_pipeline,
                                 package_path=fe_cfg.pipeline.pkg_path)
-    
+
     if not args.compile_only:
         client = Client(host=ENDPOINT)
         experiment = client.create_experiment(name=EXPERIMENT)
