@@ -1,4 +1,4 @@
-"""Defines the kfp components of the feature engineering pipeline."""
+"""Defines the components of the feature engineering pipeline."""
 import argparse
 import os
 from pathlib import Path
@@ -15,7 +15,6 @@ for i in range(len(current_dir)+1):
     sys.path.append('/'.join(current_dir[:i]))
 
 from src.feature_engineering.nodes import drop_useless, encode_cell
-from src.utilitis.gcpstorage import copy_many_blobs
 
 load_dotenv()
 APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
