@@ -1,0 +1,42 @@
+name: Reusable Build and Push images
+
+on:
+  workflow_call:
+    secrets: inherit
+
+jobs:
+  build-base-image:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup environment
+        uses: ./.github/workflows/setup_environment_on_call.yaml
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      -
+        name: "Authorize Docker to push to Artifact Registry"
+        run: |
+          gcloud auth configure-docker ${{ secrets.REGION }}-docker.pkg.dev --quiet
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          file: Dockerfile.base
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_TAG }}
+            ${{ secrets.ARTIFACT_REGISTRY_TAG }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_CACHE_TAG }}
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_CACHE_TAG }},mode=max

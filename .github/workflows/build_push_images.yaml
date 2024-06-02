@@ -1,0 +1,16 @@
+name: Build and Push images
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - Dockerfile.base
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  call-images-build-and-push-workflow:
+    uses: ./.github/workflows/build_push_images_on_call.yaml
