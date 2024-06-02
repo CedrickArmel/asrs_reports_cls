@@ -2,12 +2,13 @@
 outputs
 local_outputs
 src/*/test.py
-*.json
-*.yaml
-conf/local/*
-*.csv
-src/*/local_run.py
+**/*.json
+**/*.yaml
+conf/local/**
+**/*.csv
+src/**/local_run.py
 *.DS_Store
+!.github/workflows/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

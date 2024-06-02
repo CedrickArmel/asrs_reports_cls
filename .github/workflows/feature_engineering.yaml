@@ -1,0 +1,52 @@
+name: Feature Engineering Workflow
+
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - src/feature_engineering**
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  call-images-build-and-push-workflow:
+    uses: ./.github/workflows/build_push_images_on_call.yaml
+  
+  submit-feature-engineering-pipeline:
+    needs: call-images-build-and-push-workflow
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Install Pyenv, Python and Poetry
+        run: |
+          curl https://pyenv.run | bash && rm -rf /tmp/*
+          echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ${HOME}/.bashrc
+          echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ${HOME}/.bashrc
+          echo 'eval "$(pyenv init -)"' >> ${HOME}/.bashrc
+          echo 'eval "$(pyenv virtualenv-init -)"' >> ${HOME}/.bashrc
+          source ${HOME}/.bashrc
+          pyenv install 3.10.13
+          pyenv global 3.10.13
+          curl -sSL https://install.python-poetry.org | python3 -
+      -
+        name: Setup environment
+        uses: ./.github/workflows/setup_environment_on_call.yaml
+      -
+        name: Create venv and install requirements
+        run: |
+          pyenv virtualenv 3.10.13 asrs
+          pyenv activate asrs
+          poetry install --without dev --no-root
+          pyenv global asrs
+      -
+        name: Submit Pipeline
+        run: |
+          python3 src/feature_engineering/pipeline.py
+
+
+
+
+
