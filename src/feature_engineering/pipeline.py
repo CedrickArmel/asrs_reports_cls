@@ -1,7 +1,9 @@
+"""ASRS Report Classification project feature engineering pipeline
+built using KFP v2 SDK."""
 import argparse
 import os
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 from kfp import compiler, Client
 from kfp.dsl import (container_component, ContainerSpec, Dataset,
                      importer, Input, Output, pipeline)
@@ -10,17 +12,17 @@ from wonderwords import RandomWord
 
 load_dotenv()
 fe_cfg = OmegaConf.load("conf/base/feature_engineering.yaml")
+ENDPOINT = os.getenv("ENDPOINT")
 EXPERIMENT = fe_cfg.pipeline.experiment
-GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-GCP_PROJECT_REGION = os.getenv("GCP_PROJECT_REGION")
 IMAGE = os.getenv("IMAGE")
-KUBEFLOW_HOST = os.getenv("KUBEFLOW_HOST")
-KUBEFLOW_PIPELINES_ROOT = os.getenv("KUBEFLOW_PIPELINES_ROOT")
 PIPELINE_NAME = fe_cfg.pipeline.name
-RAW_SOURCE = os.getenv("RAW_SOURCE")
+PIPELINE_ROOT = os.getenv("PIPELINE_ROOT")
+PROJECT_ID = os.getenv("PROJECT_ID")
+REGION = os.getenv("REGION")
+RAW_DATA = os.getenv("RAW_DATA")
 
-TRAIN_DATASET = os.path.join(str(RAW_SOURCE), fe_cfg.components.train_dataset)
-TEST_DATASET = os.path.join(str(RAW_SOURCE), fe_cfg.components.test_dataset)
+TRAIN_DATASET = os.path.join(str(RAW_DATA), fe_cfg.components.train_dataset)
+TEST_DATASET = os.path.join(str(RAW_DATA), fe_cfg.components.test_dataset)
 
 
 @container_component
@@ -51,7 +53,7 @@ def storefeatures(train_features: Input[Dataset],
               "--test-features", test_features.path])
 
 
-@pipeline(pipeline_root=KUBEFLOW_PIPELINES_ROOT)
+@pipeline(pipeline_root=PIPELINE_ROOT)
 def feature_engineering_pipeline():
     """Feature engineering pipeline.
     """
@@ -81,12 +83,12 @@ if __name__ == "__main__":
 
     compiler.Compiler().compile(pipeline_func=feature_engineering_pipeline,
                                 package_path=fe_cfg.pipeline.pkg_path)
-
+    
     if not args.compile_only:
-        client = Client(host=KUBEFLOW_HOST)
+        client = Client(host=ENDPOINT)
         experiment = client.create_experiment(name=EXPERIMENT)
         client.run_pipeline(
             experiment_id=experiment.experiment_id,
             job_name=JOB_NAME,
-            pipeline_root=KUBEFLOW_PIPELINES_ROOT,
+            pipeline_root=PIPELINE_ROOT,
             pipeline_package_path=fe_cfg.pipeline.pkg_path)
