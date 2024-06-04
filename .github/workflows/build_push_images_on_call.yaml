@@ -92,4 +92,3 @@ jobs:
           docker tag ${{ secrets.DOCKERHUB_TAG }} ${{ secrets.ARTIFACT_REGISTRY_TAG }}
           docker push ${{ secrets.DOCKERHUB_TAG }}
           docker push ${{ secrets.ARTIFACT_REGISTRY_TAG }}
-
