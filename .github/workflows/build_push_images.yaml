@@ -6,6 +6,7 @@ on:
       - 'main'
     paths:
       - Dockerfile.base
+  workflow_dispatch:
 
 permissions:
   id-token: write
