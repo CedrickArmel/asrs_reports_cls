@@ -85,7 +85,7 @@ jobs:
         name: Build image
         run: |
           docker buildx create --name builder --driver=docker-container
-          docker buildx build -t ${{ secrets.DOCKERHUB_TAG }} -f Dockerfile.test --builder=builder --platform=linux/amd64,linux/arm64 .
+          docker buildx build -t ${{ secrets.DOCKERHUB_TAG }} -f Dockerfile.test --builder=builder --platform=linux/amd64,linux/arm64 --load .
           docker tag ${{ secrets.DOCKERHUB_TAG }} ${{ secrets.ARTIFACT_REGISTRY_TAG }}
           docker push ${{ secrets.DOCKERHUB_TAG }}
           docker push ${{ secrets.ARTIFACT_REGISTRY_TAG }}
