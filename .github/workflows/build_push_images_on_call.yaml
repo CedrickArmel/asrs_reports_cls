@@ -72,6 +72,7 @@ jobs:
       -
         name: "Authorize Docker to push to Artifact Registry"
         run: |
+          gcloud auth list
           gcloud auth login --brief --cred-file="${{ steps.gcp_auth.outputs.credentials_file_path }}" --quiet
           gcloud auth configure-docker ${{ secrets.REGION }}-docker.pkg.dev --quiet
       -
