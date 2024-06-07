@@ -52,10 +52,9 @@ jobs:
       -
         name: Create venv and install requirements
         run: |
-          pyenv virtualenv 3.10.13 asrs
-          pyenv activate asrs
+          python3 -m venv asrs
+          pyenv local asrs
           poetry install --without dev --no-root
-          pyenv global asrs
       -
         name: Submit Pipeline
         run: |
