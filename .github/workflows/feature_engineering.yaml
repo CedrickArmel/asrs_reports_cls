@@ -13,10 +13,6 @@ permissions:
   contents: read
 
 jobs:
-  call-images-build-and-push-workflow:
-    uses: ./.github/workflows/build_push_images_on_call.yaml
-    secrets: inherit
-  
   submit-feature-engineering-pipeline:
     needs: call-images-build-and-push-workflow
     runs-on: ubuntu-latest
