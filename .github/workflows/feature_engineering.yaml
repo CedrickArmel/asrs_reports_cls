@@ -50,6 +50,10 @@ jobs:
           echo "RAW_DATA=${{ secrets.RAW_DATA }}" >> .env
           echo "REGION=${{ secrets.REGION }}" >> .env
       -
+        name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+      -
         name: Create venv and install requirements
         run: |
           python3 -m venv asrs
