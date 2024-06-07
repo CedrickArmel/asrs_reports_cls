@@ -24,7 +24,7 @@ jobs:
       -
         name: Install Pyenv, Python and Poetry
         run: |
-          curl https://pyenv.run | bash && rm -rf /tmp/*
+          curl https://pyenv.run | bash
           echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ${HOME}/.bashrc
           echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ${HOME}/.bashrc
           echo 'eval "$(pyenv init -)"' >> ${HOME}/.bashrc
