@@ -13,16 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  call-images-build-and-push-workflow:
-    uses: ./.github/workflows/build_push_images_on_call.yaml
-    secrets: inherit
-  
   submit-feature-engineering-pipeline:
-    needs: call-images-build-and-push-workflow
+    # needs: call-images-build-and-push-workflow
     runs-on: ubuntu-latest
     steps:
       -
-        name: setup pyenv
+        name: Setup pyenv
         uses: "gabrielfalcao/pyenv-action@v18"
         with:
           default: 3.10.13
@@ -63,5 +59,4 @@ jobs:
       -
         name: Submit Pipeline
         run: |
-          gcloud auth login --brief --cred-file="${{ steps.gcp_auth.outputs.credentials_file_path }}"
           python3 src/feature_engineering/pipeline.py
