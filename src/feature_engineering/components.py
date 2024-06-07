@@ -17,7 +17,6 @@ for i in range(len(current_dir)+1):
 from src.feature_engineering.nodes import drop_useless, encode_cell
 
 load_dotenv()
-APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 
 def featureengineering(train_set: str,
@@ -34,7 +33,7 @@ def featureengineering(train_set: str,
         train_data_out (str): /path/to/output/the/train/features/dataset
         test_data_out (str): /path/to/output/the/test/features/dataset
     """
-    GCSFileSystem(token=APPLICATION_CREDENTIALS)
+    GCSFileSystem()
     config = OmegaConf.load("conf/base/feature_engineering.yaml")
     columns = config.components.columns
     labels = config.components.labels
