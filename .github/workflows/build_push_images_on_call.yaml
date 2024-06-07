@@ -44,9 +44,9 @@ jobs:
         name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2.1.3
         with:
-          create_credentials_file: 'true'
           project_id: ${{ secrets.PROJECT_ID }}
           workload_identity_provider: ${{ secrets.WIP }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT }}
       -
         name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
@@ -56,7 +56,6 @@ jobs:
         name: Create .env file based on Github Secrets
         run: |
           echo "ENDPOINT=${{ secrets.ENDPOINT }}" >> .env
-          echo "GOOGLE_APPLICATION_CREDENTIALS=${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" >> .env
           echo "HOPSWORKS_API_KEY=${{ secrets.HOPSWORKS_API_KEY }}" >> .env
           echo "HOPSWORKS_PROJECT=${{ secrets.HOPSWORKS_PROJECT }}" >> .env
           echo "IMAGE=${{ secrets.ARTIFACT_REGISTRY_TAG }}" >> .env
@@ -73,7 +72,6 @@ jobs:
       -
         name: "Authorize Docker to push to Artifact Registry"
         run: |
-          gcloud auth login --brief --cred-file="${{ steps.gcp_auth.outputs.credentials_file_path }}"
           gcloud auth configure-docker ${{ secrets.REGION }}-docker.pkg.dev --quiet
       -
         name: Login to Docker Hub
@@ -82,13 +80,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Build image
-        run: |
-          docker buildx create --name builder --driver=docker-container
-          docker buildx build -t ${{ secrets.DOCKERHUB_TAG }} -f Dockerfile.base --builder=builder --platform=linux/amd64,linux/arm64 .
-      -
-        name: Push image
-        run: |
-          docker tag ${{ secrets.DOCKERHUB_TAG }} ${{ secrets.ARTIFACT_REGISTRY_TAG }}
-          docker push ${{ secrets.DOCKERHUB_TAG }}
-          docker push ${{ secrets.ARTIFACT_REGISTRY_TAG }}
+        name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          file: Dockerfile.base
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_TAG }}
+            ${{ secrets.ARTIFACT_REGISTRY_TAG }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }}
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }},mode=max
