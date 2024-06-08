@@ -23,3 +23,4 @@ components:
   target: "Anomaly"
   test_dataset: "test_data_final.pkl"
   train_dataset: "train_data_final.pkl"
+  feature_group_version: 1

@@ -74,15 +74,21 @@ def storefeatures(train_features: str,
     with open(test_features, "rb") as f:
         test_data = pd.read_parquet(f)
 
+    config = OmegaConf.load("conf/base/feature_engineering.yaml")
+
     project = hopsworks.login()
     fs = project.get_feature_store()
 
     train_data_fg = fs.\
-        get_or_create_feature_group(name="train_features",
-                                    description="Features to train the model",
-                                    online_enabled=True)
+        get_or_create_feature_group(
+            version=config.components.feature_group_version,
+            name="train_features",
+            description="Features to train the model",
+            online_enabled=True)
+
     test_data_fg = fs.\
         get_or_create_feature_group(
+            version=config.components.feature_group_version,
             name="test_features",
             description="Features to evaluate the model",
             online_enabled=True)
