@@ -5,7 +5,6 @@ from pathlib import Path
 import sys
 
 from dotenv import load_dotenv
-from gcsfs import GCSFileSystem
 import hopsworks
 from omegaconf import OmegaConf
 import pandas as pd
@@ -33,7 +32,6 @@ def featureengineering(train_set: str,
         train_data_out (str): /path/to/output/the/train/features/dataset
         test_data_out (str): /path/to/output/the/test/features/dataset
     """
-    GCSFileSystem()
     config = OmegaConf.load("conf/base/feature_engineering.yaml")
     columns = config.components.columns
     labels = config.components.labels
