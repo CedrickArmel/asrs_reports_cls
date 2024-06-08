@@ -20,6 +20,7 @@ def drop_useless(columns: List[str],
     outputs: List[pd.DataFrame] = []
     for _, item in kwargs.items():
         data: pd.DataFrame = item[columns]
+        data.columns = [col.lower() for col in data.columns]
         outputs.append(data)
     if len(outputs) == 1:
         outputs = outputs[0]

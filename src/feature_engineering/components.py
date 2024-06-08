@@ -36,15 +36,23 @@ def featureengineering(train_set: str,
     columns = config.components.columns
     labels = config.components.labels
     target = config.components.target
+
     train_data = pd.read_pickle(train_set)[0]
     test_data = pd.read_pickle(test_set)[0]
-    train_data, test_data = drop_useless(columns,
-                                         train_data=train_data,
-                                         test_data=test_data)
-    train_data = train_data.dropna(axis=0,
-                                   subset=columns)
-    test_data = test_data.dropna(axis=0,
-                                 subset=columns)
+
+    train_data, test_data = drop_useless(
+        columns,
+        train_data=train_data,
+        test_data=test_data)
+
+    train_data = train_data.dropna(
+        axis=0,
+        subset=train_data.columns.tolist())
+
+    test_data = test_data.dropna(
+        axis=0,
+        subset=test_data.columns.tolist())
+
     train_data[target] = train_data[target].\
         apply(lambda cell: encode_cell(cell, labels))
     test_data[target] = test_data[target].\
@@ -75,6 +83,7 @@ def storefeatures(train_features: str,
         test_data = pd.read_parquet(f)
 
     config = OmegaConf.load("conf/base/feature_engineering.yaml")
+    primary_key = train_data.columns.tolist()
 
     project = hopsworks.login()
     fs = project.get_feature_store()
@@ -82,6 +91,7 @@ def storefeatures(train_features: str,
     train_data_fg = fs.\
         get_or_create_feature_group(
             version=config.components.feature_group_version,
+            primary_key=primary_key,
             name="train_features",
             description="Features to train the model",
             online_enabled=True)
@@ -89,6 +99,7 @@ def storefeatures(train_features: str,
     test_data_fg = fs.\
         get_or_create_feature_group(
             version=config.components.feature_group_version,
+            primary_key=primary_key,
             name="test_features",
             description="Features to evaluate the model",
             online_enabled=True)
