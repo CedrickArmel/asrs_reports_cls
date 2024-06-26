@@ -41,7 +41,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          file: Dockerfile.base
+          file: Dockerfile.asrs.cpu
           push: False
           tags: ${{ secrets.DOCKERHUB_TAG }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }}

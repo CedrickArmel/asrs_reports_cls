@@ -1,0 +1,21 @@
+ARG PYTHONVERSION=3.10.13
+ARG BASE_VERSION=focal
+
+FROM drxc/python:latest
+
+ARG PYTHONVERSION=3.10.13
+
+LABEL Author="https://github.com/CedrickArmel"
+
+COPY . ${HOME}/app
+WORKDIR ${HOME}/app
+RUN set -eux ; \
+    \
+    source ${HOME}/.bashrc ; \
+    pyenv virtualenv ${PYTHONVERSION} myenv ; \
+    pyenv activate myenv ; \
+    poetry install --without dev --no-root ; \
+    pyenv global myenv ;
+WORKDIR ${HOME}/app
+ENV PYTHONPATH=/
+ENTRYPOINT [ "/bin/bash" ]
