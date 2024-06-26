@@ -4,6 +4,7 @@ import argparse
 import os
 
 from dotenv import load_dotenv, dotenv_values
+from google.cloud import aiplatform
 from kfp import Client, compiler
 from kfp.dsl import (container_component, ContainerSpec, Dataset,
                      importer, Input, Output, pipeline)
@@ -77,7 +78,37 @@ if __name__ == "__main__":
     words = r.random_words(amount=2, word_max_length=10)
     JOB_NAME = "-".join(words)
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog="Feature Engineering Pipeline",
+        description="""Programme to run the Feature Engineering Pipeline""")
+    subparsers = parser.add_subparsers(title="Platforms", dest="platform")
+
+    vertex_parser = subparsers.add_parser(
+        "vertexai",
+        help="Run the pipeline on GCP Vertex AI.")
+
+    vertex_parser.add_argument(
+        "--project",
+        default=PROJECT_ID,
+        help="Your project ID on GCP. \
+            If empty use the PROJECT_ID environment variable.")
+
+    vertex_parser.add_argument(
+        "--region",
+        default=REGION,
+        help="The region of your Vertex AI resource on GCP. \
+            If empty use the REGION environment variable")
+
+    kubeflow_parser = subparsers.add_parser(
+        "kubeflow",
+        help="Run the pipeline on any Kubeflow platform.")
+
+    kubeflow_parser.add_argument(
+        "--endpoint",
+        default=ENDPOINT,
+        help="The endpoint of your kubeflow instance. \
+            If empty use the ENDPOINT environment variable")
+
     parser.add_argument('--compile-only',
                         action='store_true')
     args = parser.parse_args()
@@ -86,10 +117,24 @@ if __name__ == "__main__":
                                 package_path=fe_cfg.pipeline.pkg_path)
 
     if not args.compile_only:
-        client = Client(host=ENDPOINT)
-        experiment = client.create_experiment(name=EXPERIMENT)
-        client.run_pipeline(
-            experiment_id=experiment.experiment_id,
-            job_name=JOB_NAME,
-            pipeline_root=PIPELINE_ROOT,
-            pipeline_package_path=fe_cfg.pipeline.pkg_path)
+        if args.platform == "vertexai":
+            aiplatform.init(project=args.project,
+                            location=args.region)
+            run = aiplatform.PipelineJob(
+                project=args.project,
+                location=args.region,
+                display_name=PIPELINE_NAME,
+                template_path=fe_cfg.pipeline.pkg_path,
+                job_id=JOB_NAME,
+                pipeline_root=PIPELINE_ROOT,
+                enable_caching=True)
+            run.submit()
+
+        if args.platform == "kubeflow":
+            client = Client(host=args.endpoint)
+            experiment = client.create_experiment(name=EXPERIMENT)
+            client.run_pipeline(
+                experiment_id=experiment.experiment_id,
+                job_name=JOB_NAME,
+                pipeline_root=PIPELINE_ROOT,
+                pipeline_package_path=fe_cfg.pipeline.pkg_path)

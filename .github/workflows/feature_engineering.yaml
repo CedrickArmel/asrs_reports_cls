@@ -66,5 +66,5 @@ jobs:
         name: Submit Pipeline
         run: |
           source env/bin/activate
-          python3 src/feature_engineering/pipeline.py
+          python3 src/feature_engineering/pipeline.py vertexai
 
