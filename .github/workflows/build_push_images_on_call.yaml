@@ -3,7 +3,7 @@ name: Reusable Build and Push images
 on:
   workflow_call:
     secrets:
-      AIP_TENSORBOARD:
+      AIP_TENSORBOARD_LOG_DIR:
         required: true
       DOCKERHUB_TOKEN:
         required: true
