@@ -3,6 +3,8 @@ name: Reusable Build and Push images
 on:
   workflow_call:
     secrets:
+      AIP_TENSORBOARD:
+        required: true
       DOCKERHUB_TOKEN:
         required: true
       DOCKERHUB_USERNAME:
@@ -12,8 +14,6 @@ on:
       HOPSWORKS_API_KEY:
         required: true
       HOPSWORKS_PROJECT:
-        required: true
-      IMAGE:
         required: true
       PIPELINE_ROOT:
         required: true
