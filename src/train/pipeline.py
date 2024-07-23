@@ -1,5 +1,6 @@
-"""ASRS Report Classification project EVL pipeline
+"""ASRS Report Classification project Train pipeline
 built using KFP v2 SDK."""
+
 import os
 
 from dotenv import load_dotenv, dotenv_values
@@ -13,6 +14,7 @@ from omegaconf import OmegaConf
 from wonderwords import RandomWord
 
 load_dotenv()
+
 core = OmegaConf.load("conf/base/core.yaml")
 etlconf = OmegaConf.load("conf/base/etl.yaml")
 trainconf = OmegaConf.load("conf/base/train.yaml")

@@ -88,5 +88,3 @@ class CustomModelForSequenceClassification(TFBertForSequenceClassification):
             if metric.name != "loss":
                 metric.update_state(y, y_pred)
         return {m.name: m.result() for m in self.metrics}
-# TODO: Fix metrics outputs since their are note updated in colab tests
-# TODO: To fix above we should check in self.compile()
