@@ -16,6 +16,10 @@ jobs:
   call-images-build-and-push-workflow:
     uses: ./.github/workflows/build_push_images_on_call.yaml
     secrets: inherit
+    with:
+      BASE_VERSION: ${{ vars.BASE_VERSION }}
+      IMAGE: ${{ vars.IMAGE }}
+      PYTHONVERSION: ${{ vars.PYTHONVERSION }}
 
   submit-etl-pipeline:
     needs: call-images-build-and-push-workflow
