@@ -3,23 +3,17 @@ name: Reusable Build and Push images
 on:
   workflow_call:
     secrets:
-      ARTIFACT_REGISTRY_TAG:
-        required: true
-      DOCKERHUB_CACHE_TAG:
-        required: true
-      DOCKERHUB_TAG:
-        required: true
       DOCKERHUB_TOKEN:
         required: true
       DOCKERHUB_USERNAME:
         required: true
       ENDPOINT:
         required: true
-      GOOGLE_APPLICATION_CREDENTIALS:
-        required: true
       HOPSWORKS_API_KEY:
         required: true
       HOPSWORKS_PROJECT:
+        required: true
+      IMAGE:
         required: true
       PIPELINE_ROOT:
         required: true
@@ -29,11 +23,28 @@ on:
         required: true
       REGION:
         required: true
+      SERVICE_ACCOUNT:
+        required: true
       WIP:
         required: true
 
+    inputs:
+      BASE_VERSION:
+        required: true
+        type: string
+      IMAGE:
+        required: true
+        type: string
+      PYTHONVERSION:
+        required: true
+        type: string
+
+
 jobs:
   build-base-image:
+    strategy:
+      matrix:
+        DEVICE: ['cpu', 'gpu']
     runs-on: ubuntu-latest
     steps:
       -
@@ -55,10 +66,12 @@ jobs:
       -
         name: Create .env file based on Github Secrets
         run: |
+          echo "AIP_TENSORBOARD=${{ secrets.AIP_TENSORBOARD }}" >> .env
           echo "ENDPOINT=${{ secrets.ENDPOINT }}" >> .env
           echo "HOPSWORKS_API_KEY=${{ secrets.HOPSWORKS_API_KEY }}" >> .env
           echo "HOPSWORKS_PROJECT=${{ secrets.HOPSWORKS_PROJECT }}" >> .env
-          echo "IMAGE=${{ secrets.ARTIFACT_REGISTRY_TAG }}" >> .env
+          echo "GPU_IMAGE=${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ inputs.IMAGE }}:gpu"
+          echo "IMAGE=${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ inputs.IMAGE }}:cpu" >> .env
           echo "PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }}" >> .env
           echo "PROJECT_ID=${{ secrets.PROJECT_ID }}" >> .env
           echo "RAW_DATA=${{ secrets.RAW_DATA }}" >> .env
@@ -80,15 +93,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Build and push
+        name: Build and push CPU image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          file: Dockerfile.asrs.cpu
+          build-args: |
+            PYTHONVERSION=${{ inputs.PYTHONVERSION }}
+            BASE_VERSION=${{ inputs.BASE_VERSION }}
+            DEVICE=${{ matrix.DEVICE }}
+          file: Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_TAG }}
-            ${{ secrets.ARTIFACT_REGISTRY_TAG }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }}
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }},mode=max
+            ${{ inputs.IMAGE }}:${{ matrix.DEVICE}}
+            ${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ inputs.IMAGE }}:${{ matrix.DEVICE}}
+          cache-from: type=registry,ref=${{ inputs.IMAGE }}:${{ matrix.DEVICE}}-cache
+          cache-to: type=registry,ref=${{ inputs.IMAGE }}:${{ matrix.DEVICE}}-cache,mode=max

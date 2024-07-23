@@ -1,7 +1,8 @@
+ARG BASE_VERSION=20.04
 ARG PYTHONVERSION=3.10.13
-ARG BASE_VERSION=focal
+ARG DEVICE=cpu
 
-FROM drxc/python:latest
+FROM drxc/python:${PYTHONVERSION}-ubuntu${BASE_VERSION}-${DEVICE}
 
 ARG PYTHONVERSION=3.10.13
 
@@ -14,8 +15,11 @@ RUN set -eux ; \
     source ${HOME}/.bashrc ; \
     pyenv virtualenv ${PYTHONVERSION} myenv ; \
     pyenv activate myenv ; \
-    poetry install --without dev --no-root ; \
+    poetry install --without dev ; \
     pyenv global myenv ;
+
 WORKDIR ${HOME}/app
+
 ENV PYTHONPATH=/
+
 ENTRYPOINT [ "/bin/bash" ]
