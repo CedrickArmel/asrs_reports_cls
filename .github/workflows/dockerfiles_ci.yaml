@@ -7,6 +7,9 @@ on:
 
 jobs:
   docker-ci:
+    strategy:
+      matrix:
+        DEVICE: ['cpu', 'gpu']
     runs-on: ubuntu-latest
     steps:
       -
@@ -15,14 +18,16 @@ jobs:
       -
         name: Create .env file based on Github Secrets
         run: |
+          echo "AIP_TENSORBOARD=${{ secrets.AIP_TENSORBOARD }}" >> .env
           echo "ENDPOINT=${{ secrets.ENDPOINT }}" >> .env
           echo "HOPSWORKS_API_KEY=${{ secrets.HOPSWORKS_API_KEY }}" >> .env
           echo "HOPSWORKS_PROJECT=${{ secrets.HOPSWORKS_PROJECT }}" >> .env
-          echo "IMAGE=${{ secrets.ARTIFACT_REGISTRY_TAG }}" >> .env
+          echo "GPU_IMAGE=${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ vars.IMAGE }}:gpu"
+          echo "IMAGE=${{ secrets.REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/${{ vars.IMAGE }}:cpu" >> .env
           echo "PIPELINE_ROOT=${{ secrets.PIPELINE_ROOT }}" >> .env
           echo "PROJECT_ID=${{ secrets.PROJECT_ID }}" >> .env
-          echo "REGION=${{ secrets.REGION }}" >> .env
           echo "RAW_DATA=${{ secrets.RAW_DATA }}" >> .env
+          echo "REGION=${{ secrets.REGION }}" >> .env
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -41,8 +46,13 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          file: Dockerfile.asrs.cpu
-          push: False
-          tags: ${{ secrets.DOCKERHUB_TAG }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }}
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_CACHE_TAG }},mode=max
+          build-args: |
+            PYTHONVERSION=${{ vars.PYTHONVERSION }}
+            BASE_VERSION=${{ vars.BASE_VERSION }}
+            DEVICE=${{ matrix.DEVICE }}
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ vars.IMAGE }}:${{ matrix.DEVICE}}
+          cache-from: type=registry,ref=${{ vars.IMAGE }}:${{ matrix.DEVICE}}-cache
+          cache-to: type=registry,ref=${{ vars.IMAGE }}:${{ matrix.DEVICE}}-cache,mode=max
