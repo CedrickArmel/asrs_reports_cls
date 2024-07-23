@@ -45,7 +45,7 @@ jobs:
       -
         name: Create .env file based on Github Secrets
         run: |
-          echo "AIP_TENSORBOARD=${{ secrets.AIP_TENSORBOARD }}" >> .env
+          echo "AIP_TENSORBOARD_LOG_DIR=${{ secrets.AIP_TENSORBOARD_LOG_DIR }}" >> .env
           echo "ENDPOINT=${{ secrets.ENDPOINT }}" >> .env
           echo "HOPSWORKS_API_KEY=${{ secrets.HOPSWORKS_API_KEY }}" >> .env
           echo "HOPSWORKS_PROJECT=${{ secrets.HOPSWORKS_PROJECT }}" >> .env
