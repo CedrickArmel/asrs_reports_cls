@@ -43,6 +43,7 @@ on:
 jobs:
   build-base-image:
     strategy:
+      max-parallel: 1
       matrix:
         DEVICE: ['cpu', 'gpu']
     runs-on: ubuntu-latest
