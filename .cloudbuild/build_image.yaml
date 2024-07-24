@@ -8,12 +8,12 @@ steps:
         echo "ENDPOINT=$$ENDPOINT" >> .env
         echo "HOPSWORKS_API_KEY=$$HOPSWORKS_API_KEY" >> .env
         echo "HOPSWORKS_PROJECT=$$HOPSWORKS_PROJECT" >> .env
-        echo "GPU_IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:gpu"
-        echo "IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:cpu" >> .env
+        echo "GPU_IMAGE=$LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:gpu"
+        echo "IMAGE=$LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:cpu" >> .env
         echo "PIPELINE_ROOT=$$PIPELINE_ROOT" >> .env
         echo "PROJECT_ID=$PROJECT_ID" >> .env
         echo "RAW_DATA=$$RAW_DATA" >> .env
-        echo "GCP_REGION=$REGION" >> .env
+        echo "REGION=$LOCATION" >> .env
         docker login --username=$$DOCKERHUB_USERNAME --password=$$DOCKERHUB_TOKEN
         docker buildx create --name=container --driver=docker-container --use
         docker buildx build -f Dockerfile \
@@ -26,8 +26,8 @@ steps:
         --cache-to "type=registry,ref=${_IMAGE}:${_DEVICE}-cache,mode=max" \
         --cache-from "type=registry,ref=${_IMAGE}:${_DEVICE}-cache"\
         --push .
-        docker tag ${_IMAGE}:${_DEVICE} $REGION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
-        docker push $REGION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
+        docker tag ${_IMAGE}:${_DEVICE} $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
+        docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
     secretEnv:
       - AIP_TENSORBOARD
       - DOCKERHUB_USERNAME
