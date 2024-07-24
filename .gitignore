@@ -14,7 +14,7 @@ src/**/local_run.py
 __pycache__/
 *.py[cod]
 *$py.classs
-
+*.whl
 # C extensions
 *.so
 
