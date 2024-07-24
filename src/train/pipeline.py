@@ -17,6 +17,8 @@ core = OmegaConf.load("conf/base/core.yaml")
 etlconf = OmegaConf.load("conf/base/etl.yaml")
 trainconf = OmegaConf.load("conf/base/train.yaml")
 
+ACCELERATOR_LIMIT = trainconf.training.accelerator_limit
+ACCELERATOR_TYPE = trainconf.training.accelerator_type
 CHECKPOINT = trainconf.model.checkpoint
 ENDPOINT = os.getenv("ENDPOINT")
 EXPERIMENT = trainconf.pipeline.experiment
@@ -65,7 +67,10 @@ def train_pipeline():
         reimport=False)
     create_training_data_op = create_training_data()
     train(td_metadata=create_training_data_op.output,
-          state=import_checkpoint_op.output)
+          state=import_checkpoint_op.output).\
+        add_node_selector_constraint(ACCELERATOR_TYPE).\
+        set_accelerator_type(ACCELERATOR_TYPE).\
+        set_accelerator_limit(ACCELERATOR_LIMIT)
 
 
 class VertexAI(object):

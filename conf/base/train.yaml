@@ -1,0 +1,24 @@
+model:
+  checkpoint: no_checkpoint  # Null training will not start from checkpoint
+  name: ""
+  metrics:
+    - accuracy
+    - recall
+  optimizer: "binary_crossentropy"
+
+pipeline:
+  name: "train"
+  template: "train.yaml"
+  experiment: "train_bert_focal_loss"
+
+training:
+  batch: 64
+  num_checkpoints: 1
+  eval_batch: 64
+  stop_points: 0.064
+  accelerator_type: NVIDIA_TESLA_T4
+  accelerator_limit: 2
+
+tb:  # TensorBoard
+  hfreq: 1  # histogram frequency
+  ufreq: 'epoch'  # frequency to update TB
