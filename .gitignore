@@ -5,6 +5,7 @@ src/*/test.py
 **/*.json
 **/*.yaml
 !conf/base/**
+!.cloudbuild/**
 conf/local/**
 **/*.csv
 src/**/local_run.py
