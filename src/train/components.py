@@ -1,3 +1,4 @@
+"""Defines the components of the Train pipeline."""
 import json
 import os
 from typing import Tuple

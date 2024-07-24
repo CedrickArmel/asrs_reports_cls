@@ -1,6 +1,4 @@
-"""ASRS Report Classification project Train pipeline
-built using KFP v2 SDK."""
-
+"""ASRS Report Classification project Train pipeline built using KFP v2 SDK."""
 import os
 
 from dotenv import load_dotenv, dotenv_values

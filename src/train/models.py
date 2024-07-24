@@ -1,3 +1,4 @@
+"""This module contains models defintion for the Train pipeline."""
 from typing import Optional, Tuple
 import tensorflow as tf
 from transformers.models.bert.modeling_tf_bert import (

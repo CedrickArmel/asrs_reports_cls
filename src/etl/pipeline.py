@@ -1,5 +1,4 @@
-"""ASRS Report Classification project EVL pipeline
-built using KFP v2 SDK."""
+"""ASRS Report Classification project ETL pipeline built using KFP v2 SDK."""
 import os
 
 from dotenv import load_dotenv, dotenv_values
