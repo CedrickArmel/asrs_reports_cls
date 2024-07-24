@@ -72,4 +72,4 @@ jobs:
         name: Submit Pipeline
         run: |
           source env/bin/activate
-          python3 src/train/pipeline.py ${{ vars.MLPLATFORM }}
+          python3 src/train/pipeline.py ${{ vars.MLPLATFORM }} run

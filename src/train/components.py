@@ -1,3 +1,4 @@
+"""Defines the components of the Train pipeline."""
 import json
 import os
 from typing import Tuple
@@ -107,7 +108,7 @@ class Train(object):
 
         with open(td_metadata_output, 'w') as f:
             f.write(json.dumps(metadata))
-    # TODO: Run the remaining of the pipeline only if metadata is not None. 
+    # TODO: Run the remaining of the pipeline only if metadata is not None.
     # Log a message tha say tha fg doesn't exist so we are skiping
 
     def _import_training_data(
@@ -188,24 +189,34 @@ class Train(object):
         # epochs and contant training sample size (as new data arrives)
         train_dataset = train_dataset.map(
             lambda x, y: self._tokenizer_fn(x, y),
-            num_parallel_calls=tf.data.AUTOTUNE).shuffle(
-                buffer_size=tf.data.AUTOTUNE,
-                seed=SEED).batch(BATCH).repeat().cache().\
-                    prefetch(tf.data.AUTOTUNE)
+            num_parallel_calls=tf.data.AUTOTUNE)\
+            .shuffle(buffer_size=tf.data.AUTOTUNE,
+                     seed=SEED)\
+            .batch(BATCH)\
+            .repeat()\
+            .cache()\
+            .prefetch(tf.data.AUTOTUNE)
 
         val_dataset = val_dataset.map(
             lambda x, y: self._tokenizer_fn(x, y),
-            num_parallel_calls=tf.data.AUTOTUNE).shuffle(
-                buffer_size=tf.data.AUTOTUNE,
-                seed=SEED).batch(EVAL_BATCH).repeat().cache().\
-                    prefetch(tf.data.AUTOTUNE)
+            num_parallel_calls=tf.data.AUTOTUNE)\
+            .shuffle(buffer_size=tf.data.AUTOTUNE,
+                     seed=SEED)\
+            .batch(EVAL_BATCH)\
+            .repeat()\
+            .cache()\
+            .prefetch(tf.data.AUTOTUNE)
 
         test_dataset = test_dataset.map(
             lambda x, y: self._tokenizer_fn(x, y),
-            num_parallel_calls=tf.data.AUTOTUNE).shuffle(
-                buffer_size=tf.data.AUTOTUNE,
-                seed=SEED).batch(EVAL_BATCH).repeat().cache().\
-                    prefetch(tf.data.AUTOTUNE)
+            num_parallel_calls=tf.data.AUTOTUNE)\
+            .shuffle(buffer_size=tf.data.AUTOTUNE,
+                     seed=SEED)\
+            .batch(EVAL_BATCH)\
+            .repeat()\
+            .cache()\
+            .prefetch(tf.data.AUTOTUNE)
+
         return train_dataset, val_dataset, test_dataset
 
     def train(self, td_metadata_in: str,

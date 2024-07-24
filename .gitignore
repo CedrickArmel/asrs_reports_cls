@@ -4,6 +4,7 @@ local_outputs
 src/*/test.py
 **/*.json
 **/*.yaml
+!conf/base/**
 conf/local/**
 **/*.csv
 src/**/local_run.py

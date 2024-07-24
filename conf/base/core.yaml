@@ -1,0 +1,24 @@
+vertexai:
+  caching: true
+
+feature_group:
+  description: Features computed from NASA's ASRS database reports for their classification according to the anomalies.
+  name: anomaly_cls_fg
+  online: false
+  version: 1
+  primary_key: "ACN"
+
+feature_view:
+    name: training_view
+    version: 1
+    
+training_data:
+  description: Data to train a classier on the anomaly target.
+  format: parquet
+  version: 1
+  new: False
+
+gx_suite:
+  name: anomaly_cls_fg_validation_suite
+
+seed: 7

@@ -1,6 +1,7 @@
 """Defines the components of the ETL pipeline."""
 import os
 
+from dotenv import load_dotenv
 from fire import Fire
 import hopsworks
 import json
@@ -10,11 +11,10 @@ import pandas as pd
 from src.etl.transformations import encode_cell
 from src.etl.validate_features import build_expectation_suite
 
+load_dotenv()
+
 core = OmegaConf.load("conf/base/core.yaml")
 etlconf = OmegaConf.load("conf/base/etl.yaml")
-
-project = hopsworks.login()
-fs = project.get_feature_store()
 
 COLUMNS = etlconf.components.columns
 FG_DESCRIPTION = core.feature_group.description
@@ -25,6 +25,9 @@ GX_SUITE_NAME = core.gx_suite.name
 LABELS = etlconf.components.labels
 PRIMARY_KEY = core.feature_group.primary_key
 TARGET = etlconf.components.target
+
+project = hopsworks.login()
+fs = project.get_feature_store()
 
 
 class ETL(object):
@@ -58,11 +61,16 @@ class ETL(object):
                            input: str,
                            gx_suite_output: str,
                            fg_metadata_output: str) -> None:
-        """Compute the features, validate them and load them to the feature store.
+        """Compute the features, validate them and load them to the \
+            feature store.
 
         Args:
-            data (str): Path to the data to load to the feature store after \
+            input (str): Path to the data to load to the feature store after \
                 transformation.
+            gx_suite_output (str): Location where to store de used \
+                Great Expectation suite Artefact.
+            fg_metadata_output (str): Location where to store feature \
+                group metadata
         """
         with open(input, "rb") as f:
             data = pd.read_parquet(f)
@@ -71,7 +79,6 @@ class ETL(object):
         data[TARGET] = data[TARGET].\
             apply(lambda cell: encode_cell(cell, LABELS))
 
-        # Validate the validation suite
         gxsuite = build_expectation_suite(primary_key=PRIMARY_KEY,
                                           name=GX_SUITE_NAME,
                                           nlabels=len(LABELS),

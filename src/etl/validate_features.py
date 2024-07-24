@@ -1,3 +1,4 @@
+"""This module contains methods to validate data."""
 from great_expectations.core import (ExpectationSuite,
                                      ExpectationConfiguration)
 
