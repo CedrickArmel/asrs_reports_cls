@@ -20,7 +20,7 @@ steps:
     -t ${_IMAGE}:${_DEVICE} \
     -t $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE} \
     --builder=container \
-    --platform=linux/amd64 \
+    --platform=linux/amd64,linux/arm64 \
     --build-arg PYTHONVERSION=${_PYTHONVERSION} \
     --build-arg BASE_VERSION=${_BASE_VERSION} \
     --build-arg DEVICE=${_DEVICE} \
