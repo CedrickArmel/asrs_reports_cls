@@ -39,7 +39,6 @@ steps:
       - HOPSWORKS_PROJECT
       - PIPELINE_ROOT
       - RAW_DATA
-
     - name: 'gcr.io/cloud-builders/docker'
       entrypoint: 'bash'
       args:
@@ -80,7 +79,6 @@ steps:
         - HOPSWORKS_PROJECT
         - PIPELINE_ROOT
         - RAW_DATA
-
 logsBucket: ${_LOG_BUCKET}
 options:
   machineType: 'E2_HIGHCPU_8'
