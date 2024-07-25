@@ -25,10 +25,10 @@ steps:
         --build-arg DEVICE=${_DEVICE} \
         --cache-to "type=registry,ref=${_IMAGE}:${_DEVICE}-cache,mode=max" \
         --cache-from "type=registry,ref=${_IMAGE}:${_DEVICE}-cache" \
-        --push \
         --load .
         docker tag ${_IMAGE}:${_DEVICE} $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
         docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
+        docker push ${_IMAGE}:${_DEVICE}
     timeout: '7200s'
     secretEnv:
       - AIP_TENSORBOARD
