@@ -31,14 +31,14 @@ steps:
     docker push ${_IMAGE}:${_DEVICE}
   timeout: '7200s'
   secretEnv:
-  - AIP_TENSORBOARD
-  - DOCKERHUB_USERNAME
-  - DOCKERHUB_TOKEN
-  - ENDPOINT
-  - HOPSWORKS_API_KEY
-  - HOPSWORKS_PROJECT
-  - PIPELINE_ROOT
-  - RAW_DATA
+    - AIP_TENSORBOARD
+    - DOCKERHUB_USERNAME
+    - DOCKERHUB_TOKEN
+    - ENDPOINT
+    - HOPSWORKS_API_KEY
+    - HOPSWORKS_PROJECT
+    - PIPELINE_ROOT
+    - RAW_DATA
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args:
@@ -84,19 +84,19 @@ options:
   machineType: 'E2_HIGHCPU_8'
 availableSecrets:
   secretManager:
-  - versionName: projects/$PROJECT_NUMBER/secrets/AIP_TENSORBOARD_LOG_DIR/versions/1
-    env: AIP_TENSORBOARD
-  - versionName: projects/$PROJECT_NUMBER/secrets/DOCKERHUB_USERNAME/versions/1
-    env: DOCKERHUB_USERNAME
-  - versionName: projects/$PROJECT_NUMBER/secrets/DOCKERHUB_TOKEN/versions/1
-    env: DOCKERHUB_TOKEN
-  - versionName: projects/$PROJECT_NUMBER/secrets/ENDPOINT/versions/1
-    env: ENDPOINT
-  - versionName: projects/$PROJECT_NUMBER/secrets/HOPSWORKS_API_KEY/versions/1
-    env: HOPSWORKS_API_KEY
-  - versionName: projects/$PROJECT_NUMBER/secrets/HOPSWORKS_PROJECT/versions/1
-    env: HOPSWORKS_PROJECT
-  - versionName: projects/$PROJECT_NUMBER/secrets/PIPELINE_ROOT/versions/1
-    env: PIPELINE_ROOT
-  - versionName: projects/$PROJECT_NUMBER/secrets/RAW_DATA/versions/1
-    env: RAW_DATA
+    - versionName: projects/$PROJECT_NUMBER/secrets/AIP_TENSORBOARD_LOG_DIR/versions/1
+      env: AIP_TENSORBOARD
+    - versionName: projects/$PROJECT_NUMBER/secrets/DOCKERHUB_USERNAME/versions/1
+      env: DOCKERHUB_USERNAME
+    - versionName: projects/$PROJECT_NUMBER/secrets/DOCKERHUB_TOKEN/versions/1
+      env: DOCKERHUB_TOKEN
+    - versionName: projects/$PROJECT_NUMBER/secrets/ENDPOINT/versions/1
+      env: ENDPOINT
+    - versionName: projects/$PROJECT_NUMBER/secrets/HOPSWORKS_API_KEY/versions/1
+      env: HOPSWORKS_API_KEY
+    - versionName: projects/$PROJECT_NUMBER/secrets/HOPSWORKS_PROJECT/versions/1
+      env: HOPSWORKS_PROJECT
+    - versionName: projects/$PROJECT_NUMBER/secrets/PIPELINE_ROOT/versions/1
+      env: PIPELINE_ROOT
+    - versionName: projects/$PROJECT_NUMBER/secrets/RAW_DATA/versions/1
+      env: RAW_DATA
