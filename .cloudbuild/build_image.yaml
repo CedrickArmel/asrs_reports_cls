@@ -28,7 +28,7 @@ steps:
         --push .
         docker tag ${_IMAGE}:${_DEVICE} $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
         docker push $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE}
-    timeout: 7200
+    timeout: '7200s'
     secretEnv:
       - AIP_TENSORBOARD
       - DOCKERHUB_USERNAME
