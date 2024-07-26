@@ -1,5 +1,6 @@
 steps: 
 - name: 'gcr.io/cloud-builders/docker'
+  id: build_for_gcp_artifact_registry
   entrypoint: 'bash'
   args:
   - '-c'
@@ -36,6 +37,7 @@ steps:
     - PIPELINE_ROOT
     - RAW_DATA
 - name: 'gcr.io/cloud-builders/docker'
+  id: build_for_docker_registry
   entrypoint: 'bash'
   args:
   - '-c'
