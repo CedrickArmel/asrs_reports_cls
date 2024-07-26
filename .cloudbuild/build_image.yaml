@@ -17,8 +17,43 @@ steps:
     docker login --username=$$DOCKERHUB_USERNAME --password=$$DOCKERHUB_TOKEN
     docker buildx create --name=container --driver=docker-container --use
     docker buildx build -f Dockerfile \
-    -t ${_IMAGE}:${_DEVICE} \
     -t $LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:${_DEVICE} \
+    --builder=container \
+    --platform=linux/amd64,linux/arm64 \
+    --build-arg PYTHONVERSION=${_PYTHONVERSION} \
+    --build-arg BASE_VERSION=${_BASE_VERSION} \
+    --build-arg DEVICE=${_DEVICE} \
+    --cache-to "type=registry,ref=${_IMAGE}:${_DEVICE}-cache,mode=max" \
+    --cache-from "type=registry,ref=${_IMAGE}:${_DEVICE}-cache" \
+    --push .
+  secretEnv:
+    - AIP_TENSORBOARD
+    - DOCKERHUB_USERNAME
+    - DOCKERHUB_TOKEN
+    - ENDPOINT
+    - HOPSWORKS_API_KEY
+    - HOPSWORKS_PROJECT
+    - PIPELINE_ROOT
+    - RAW_DATA
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    echo "AIP_TENSORBOARD=$$AIP_TENSORBOARD" >> .env
+    echo "ENDPOINT=$$ENDPOINT" >> .env
+    echo "HOPSWORKS_API_KEY=$$HOPSWORKS_API_KEY" >> .env
+    echo "HOPSWORKS_PROJECT=$$HOPSWORKS_PROJECT" >> .env
+    echo "GPU_IMAGE=$LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:gpu"
+    echo "IMAGE=$LOCATION-docker.pkg.dev/$PROJECT_ID/${_IMAGE}:cpu" >> .env
+    echo "PIPELINE_ROOT=$$PIPELINE_ROOT" >> .env
+    echo "PROJECT_ID=$PROJECT_ID" >> .env
+    echo "RAW_DATA=$$RAW_DATA" >> .env
+    echo "REGION=$LOCATION" >> .env
+    docker login --username=$$DOCKERHUB_USERNAME --password=$$DOCKERHUB_TOKEN
+    docker buildx create --name=container --driver=docker-container --use
+    docker buildx build -f Dockerfile \
+    -t ${_IMAGE}:${_DEVICE} \
     --builder=container \
     --platform=linux/amd64,linux/arm64 \
     --build-arg PYTHONVERSION=${_PYTHONVERSION} \
@@ -58,4 +93,4 @@ availableSecrets:
       env: PIPELINE_ROOT
     - versionName: projects/$PROJECT_NUMBER/secrets/RAW_DATA/versions/1
       env: RAW_DATA
-timeout: '14500s'
+timeout: '10800s'
