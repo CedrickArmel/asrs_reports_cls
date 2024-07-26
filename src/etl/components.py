@@ -10,7 +10,9 @@ import pandas as pd
 
 from src.etl.transformations import encode_cell
 from src.etl.validate_features import build_expectation_suite
+from src.utilitis.core import get_logger
 
+logger = get_logger(__name__)
 load_dotenv()
 
 core = OmegaConf.load("conf/base/core.yaml")
@@ -44,6 +46,8 @@ class ETL(object):
             dataset2 (str): path to the 2nd data set.
             output (str): path to where to store the concatenated data sets.
         """
+        logger.info("⏳ Starting Extract task...🔄")
+
         data1 = pd.read_pickle(dataset1)[0]
         data2 = pd.read_pickle(dataset2)[0]
         data = pd.concat([data1, data2]).reset_index()
@@ -56,6 +60,8 @@ class ETL(object):
 
         with open(output, "wb") as f:
             data.to_parquet(f)
+
+        logger.info("⌛️ Extract task completed successfully!✅")
 
     def transform_and_load(self,
                            input: str,
@@ -72,7 +78,10 @@ class ETL(object):
             fg_metadata_output (str): Location where to store feature \
                 group metadata
         """
+        logger.info("⏳ Starting Transform and load task...🔄")
+
         with open(input, "rb") as f:
+            logger.info("Loading")
             data = pd.read_parquet(f)
 
         # Transform the target colum: "label1;...;labeln" => [1,...,1]
@@ -83,6 +92,9 @@ class ETL(object):
                                           name=GX_SUITE_NAME,
                                           nlabels=len(LABELS),
                                           target=TARGET)
+
+        logger.info("⏳ Creating feature group...🔄")
+
         fg = fs.\
             get_or_create_feature_group(
                 name=FG_NAME,
@@ -92,8 +104,11 @@ class ETL(object):
                 expectation_suite=gxsuite,  # validate data before ingestion
                 online_enabled=FG_ONLINE)
 
+        logger.info("⏳ Ingesting data in feature group...🔄")
+
         fg.insert(data, wait=True)
 
+        logger.info("⏳ Exporting Metada artefacts...🔄")
         if not os.path.exists(os.path.dirname(gx_suite_output)):
             os.makedirs(os.path.dirname(gx_suite_output))
 
@@ -104,6 +119,8 @@ class ETL(object):
             f.write(json.dumps(gxsuite.to_json_dict()))
         with open(fg_metadata_output, 'w') as f:
             f.write(json.dumps(fg.to_dict()))
+
+        logger.info("⌛️ Transform and load task completed successfully!✅")
 
 
 if __name__ == "__main__":

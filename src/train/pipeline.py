@@ -1,7 +1,7 @@
 """ASRS Report Classification project Train pipeline built using KFP v2 SDK."""
 import os
 
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 from fire import Fire
 from google.cloud import aiplatform
 from kfp import Client, compiler
@@ -10,6 +10,10 @@ from kfp.dsl import (Artifact, container_component,
                      Input, Model, Output, pipeline)
 from omegaconf import OmegaConf
 from wonderwords import RandomWord
+
+from src.utilitis.core import get_logger
+
+logger = get_logger(__name__)
 
 load_dotenv()
 
@@ -118,8 +122,14 @@ class VertexAI(object):
             region (str | None, optional):Location to create PipelineJob. \
                 Defaults to None.Ò
         """
+        logger.info("🛠️ Setting up pipeline for Vertex AI...🔄")
+
+        logger.info("🛠️ Compiling pipeline... 🔄")
         compiler.Compiler().compile(pipeline_func=train_pipeline,
                                     package_path=self.template)
+        logger.info("🛠️ Compiled pipeline successfully!✅")
+
+        logger.info("🛠️ Initializing pipeline for Vertex AI...🔄")
         aiplatform.init(
             project=self.project_id if project is None else project,
             location=self.region if region is None else region)
@@ -129,7 +139,11 @@ class VertexAI(object):
             job_id=self.jobname,
             pipeline_root=self.root,
             enable_caching=True)
+
+        logger.info("⏳ Submiting to Vertex AI...🔄")
         run.submit()
+
+        logger.info("⌛️ Pipeline submited successfully!✅")
 
 
 class Kubeflow(object):
@@ -172,16 +186,25 @@ class Kubeflow(object):
             experiment (str | None, optional): Experiment name to use. \
                 Behaves as namespace. Defaults to None.
         """
+        logger.info("🛠️ Setting up pipeline for Kubeflow...🔄")
+
+        logger.info("🛠️ Compiling pipeline...🔄")
         compiler.Compiler().compile(pipeline_func=train_pipeline,
                                     package_path=self.template)
+        logger.info("🛠️ Compiled pipeline successfully!✅")
+
+        logger.info("🛠️ Initializing pipeline for Kubeflow...🔄")
         client = Client(host=self.endpoint if endpoint is None else endpoint)
         exp = client.create_experiment(
             name=self.experiment if experiment is None else experiment)
+
+        logger.info("⏳ Submiting to Kubeflow...🔄")
         client.run_pipeline(
             experiment_id=exp.experiment_id,
             job_name=self.jobname,
             pipeline_root=self.root,
             pipeline_package_path=self.template)
+        logger.info("⌛️ Pipeline submited successfully!✅")
 
 
 class Pipeline(object):
@@ -236,8 +259,10 @@ class Pipeline(object):
                                  endpoint=self.endpoint)
 
     def compile(self):
+        logger.info("🛠️ Compiling pipeline...🔄")
         compiler.Compiler().compile(pipeline_func=train_pipeline,
                                     package_path=self.template)
+        logger.info("🛠️ Compiled pipeline successfully!✅")
 
     def _get_jobname(self):
         r = RandomWord()

@@ -17,6 +17,9 @@ from transformers import AutoTokenizer
 
 from src.train.models import (
     CustomModelForSequenceClassification as Cls)
+from src.utilitis.core import get_logger
+
+logger = get_logger(__name__)
 
 load_dotenv()
 
@@ -63,12 +66,15 @@ class Train(object):
             td_metada_output (str): Path where to output \
                 the training data metadata artefact.
         """
+        logger.info("⏳ Starting Create Training Data task...🔄")
+
         try:
             fv = fs.get_feature_view(
                 name=FV_NAME,
                 version=FV_VERSION)
-        except RestAPIError:
-            # TODO: Logging
+        except RestAPIError as e:
+            logger.warning("⚠️ %s raised. Feature View seems missing. \
+                           Trying to create a new one...🔄", str(e))
             try:
                 fg = fs.get_feature_group(
                     name=FG_NAME,
@@ -79,37 +85,40 @@ class Train(object):
                     name=FV_NAME,
                     version=FV_VERSION,
                     query=query)
-            except RestAPIError:
-                # TODO: Logging
-                fv = None
+            except RestAPIError as e:
+                logger.exception(
+                    "💀 %s raised. Feature View creation failed ❌. \
+                        Seems that Feature Group is also missing. \
+                            A Feature Group is need before running \
+                                this pipeline !", str(e))
 
-        if fv is not None:
-            version, job = fv.create_train_validation_test_split(
-                validation_size=0.3,
-                test_size=0.2,
-                description=TD_DESCRIPTION,
-                seed=SEED,
-                data_format=TD_FORMAT,
-                write_options={"use_spark": True})
-            metadata = json.loads(fv.json())
+        version, job = fv.create_train_validation_test_split(
+            validation_size=0.3,
+            test_size=0.2,
+            description=TD_DESCRIPTION,
+            seed=SEED,
+            data_format=TD_FORMAT,
+            write_options={"use_spark": True})
+        metadata = json.loads(fv.json())
 
-            if (version > TD_VERSION) and TD_NEW:
-                metadata["training_data_version"] = version
-                # TODO: Logging
-            else:
-                # TODO: Logging
-                metadata["training_data_version"] = TD_VERSION
+        if (version > TD_VERSION) and TD_NEW:
+            logger.warning(
+                "⚠️ Using the training data version %s as verion %s \
+                    already exists AND 'td_new' parameter in conf \
+                        have been set to 'True'. to change this behavior, \
+                            set 'td_new' to 'false'.",
+                str(version), str(TD_VERSION))
+            metadata["training_data_version"] = version
         else:
-            # TODO: Logging
-            metadata = None
+            metadata["training_data_version"] = TD_VERSION
 
         if not os.path.exists(os.path.dirname(td_metadata_output)):
             os.makedirs(os.path.dirname(td_metadata_output))
 
         with open(td_metadata_output, 'w') as f:
             f.write(json.dumps(metadata))
-    # TODO: Run the remaining of the pipeline only if metadata is not None.
-    # Log a message tha say tha fg doesn't exist so we are skiping
+
+        logger.info("⌛️ Create Training Data task completed successfully!✅")
 
     def _import_training_data(
             self, td_metadata_in: str) -> Tuple:
@@ -161,15 +170,18 @@ class Train(object):
             reduction="sum_over_batch_size",
             name="binary_crossentropy")
         if state != "no_checkpoint":
+            logger.info("🏁 Importing model from checkpoint...🔄")
             with self.strategy.scope():
                 model = keras.models.load_model(state)
         else:
+            logger.info("🛠️ Initialising model from HuggingFace🤗...🔄")
             with self.strategy.scope():
                 model = Cls.from_pretrained(MODEL_NAME,
                                             num_labels=len(LABELS),
                                             from_pt=True)
                 model.compile(optimizer=OPTIMIZER,
                               loss=loss, metrics=METRICS)
+        logger.info("⌛️ Model import completed successfully!✅")
         return model
 
     def _prepare_dataset(self, td_metadata_in: str):
@@ -230,6 +242,7 @@ class Train(object):
             state (str): The checkpoint path to use as state to start training.
             checkpoints (str): Checkpointing location.
         """
+        logger.info("⏳ Starting Training task...🔄")
         # TODO: Import metrics as a module
         tensorboard_callback = keras.callbacks.TensorBoard(
             log_dir=AIP_TENSORBOARD,
@@ -253,7 +266,8 @@ class Train(object):
         steps_per_epoch = (TOTAL_TRAINING_EXAMPLES //
                            (BATCH * NUM_CHECKPOINTS))
         model = self._import_model(state)
-
+        
+        logger.info("🧠 Training model Training...🔄")
         history = model.fit(
             train_dataset,
             validation_data=val_dataset,
@@ -266,6 +280,7 @@ class Train(object):
             test_dataset,
             callbacks=[tensorboard_callback],
             return_dict=True)
+        logger.info("🧠 Model training completed successfully!✅")
 
         if not os.path.exists(os.path.dirname(scores_out)):
             os.makedirs(os.path.dirname(scores_out))
@@ -273,8 +288,11 @@ class Train(object):
         scores = {"history": history.history,
                   "eval_scores": eval_scores}
 
+        logger.info("🛠️ Exporting metrics artefact...🔄")
         with open(scores_out, 'w') as file:
             file.write(json.dumps(scores))
+
+        logger.info("⌛️ Training completed successfully!✅")
 
 
 if __name__ == "__main__":
