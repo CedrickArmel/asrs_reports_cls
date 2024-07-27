@@ -1,6 +1,8 @@
 """__init__ for train module.
 """
 
-__all__ = ["components",
-           "pipeline",
-           "functions"]
+__all__ = [
+    "components",
+    "pipeline",
+    "models",
+]

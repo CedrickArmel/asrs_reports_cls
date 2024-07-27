@@ -1,12 +1,14 @@
 """This module contains methods to validate data."""
-from great_expectations.core import (ExpectationSuite,
-                                     ExpectationConfiguration)
+
+from great_expectations.core import ExpectationConfiguration, ExpectationSuite
 
 
-def build_expectation_suite(primary_key: str,
-                            name: str,
-                            nlabels: int,
-                            target: str) -> ExpectationSuite:
+def build_expectation_suite(
+    primary_key: str,
+    name: str,
+    nlabels: int,
+    target: str,
+) -> ExpectationSuite:
     """Return the validation suite for the ETL pipeline.
 
     Args:
@@ -18,18 +20,26 @@ def build_expectation_suite(primary_key: str,
     Returns:
         ExpectationSuite: The suite to validate the data
     """
-    gxsuite = ExpectationSuite(
-        expectation_suite_name=name)
+    gxsuite = ExpectationSuite(expectation_suite_name=name)
     gxsuite.add_expectation(
         ExpectationConfiguration(
             expectation_type="expect_column_values_to_not_be_null",
-            kwargs=dict(column=primary_key,
-                        mostly=0.0)))
+            kwargs=dict(
+                column=primary_key,
+                mostly=0.0,
+            ),
+        )
+    )
     gxsuite.add_expectation(
         ExpectationConfiguration(
             expectation_type="expect_column_values_to_match_regex",
             kwargs=dict(
                 column=target,
-                regex=r"(?:^\[)(?:(?:[01](?:, ){0,1}){len_labels})(?:\])"
-                .replace("len_labels", str(nlabels)))))
+                regex=r"(?:^\[)(?:(?:[01](?:, ){0,1}){len_labels})(?:\])".replace(
+                    "len_labels",
+                    str(nlabels),
+                ),
+            ),
+        )
+    )
     return gxsuite

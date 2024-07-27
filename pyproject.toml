@@ -1,3 +1,12 @@
+[tool.black]
+line-length = 79
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+disable_error_code = "import-untyped"
+
 [tool.poetry]
 name = "src"
 version = "0.1.0"
@@ -27,6 +36,12 @@ mypy = "^1.9.0"
 isort = "^5.13.2"
 pylint = "^3.1.0"
 docker = "^7.0.0"
+black = "^24.4.2"
+flake8-bugbear = "^24.4.26"
+
+[tool.pylint.format]
+max-line-length = "88"
+disable = "W0108,W0511,"
 
 [build-system]
 requires = ["poetry-core"]

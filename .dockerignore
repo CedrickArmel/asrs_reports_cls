@@ -6,7 +6,9 @@
 .python-version
 Dockerfile.base
 .dockerignore
-feature_engineering.yaml
+**/*.yaml
+!conf/base/**
+!.cloudbuild/**
 LICENSE
 **/*.csv
 src/**/local_run.py
