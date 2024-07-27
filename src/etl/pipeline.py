@@ -83,7 +83,7 @@ def transform_and_load(
         args=[
             "src/etl/components.py",
             "transform-and-load",
-            "--input",
+            "--path",
             data.path,
             "--gxsuite-output",
             gx_suite_output.path,

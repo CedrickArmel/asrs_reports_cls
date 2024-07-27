@@ -6,18 +6,19 @@ pipeline:
 components:
   columns: ['ACN', 'Narrative', 'Anomaly']
   labels: ['Deviation / Discrepancy - Procedural',
-  'Aircraft Equipment',
-  'Conflict',
-  'Inflight Event / Encounter',
-  'ATC Issue',
-  'Deviation - Altitude',
-  'Deviation - Track / Heading',
-  'Ground Event / Encounter',
-  'Flight Deck / Cabin / Aircraft Event',
-  'Ground Incursion',
-  'Airspace Violation',
-  'Deviation - Speed',
-  'Ground Excursion',
-  'No Specific Anomaly Occurred']
+    'Aircraft Equipment',
+    'Conflict',
+    'Inflight Event / Encounter',
+    'ATC Issue',
+    'Deviation - Altitude',
+    'Deviation - Track / Heading',
+    'Ground Event / Encounter',
+    'Flight Deck / Cabin / Aircraft Event',
+    'Ground Incursion',
+    'Airspace Violation',
+    'Deviation - Speed',
+    'Ground Excursion',
+    'No Specific Anomaly Occurred']
+  target: Anomaly
   test_dataset: "test_data_final.pkl"
   train_dataset: "train_data_final.pkl"
