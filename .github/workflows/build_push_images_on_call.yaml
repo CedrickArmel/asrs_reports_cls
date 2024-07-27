@@ -52,6 +52,7 @@ jobs:
         name: Maximize build disk space
         uses: easimon/maximize-build-space@v10
         with:
+          root-reserve-mb: 51200
           remove-android: 'true'
           remove-codeql: 'true'
           remove-haskell: 'true'
