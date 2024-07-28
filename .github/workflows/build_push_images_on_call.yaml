@@ -49,13 +49,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        name: Maximize build disk space
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 30000
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-haskell: 'true'
+        name: Free build disk space
+        run: |
+          set -euo pipefail
+          echo "==> Available space before cleanup"
+          echo
+          df -h
+          echo "==> Pruning the runner"
+          echo
+          sudo docker system prune --volumes -f
+          sudo rm -rf -v /opt/ghc
+          sudo rm -rf -v /usr/local/.ghcup
+          sudo rm -rf -v /opt/hostedtoolcache/CodeQL
+          sudo rm -rf -v /usr/share/dotnet
+          sudo rm -rf -v /usr/local/lib/android
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+          echo
+          echo "==> Available space after cleanup"
+          echo
+          df -h
       -
         name: Checkout
         uses: actions/checkout@v4
