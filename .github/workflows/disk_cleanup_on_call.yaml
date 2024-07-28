@@ -1,0 +1,35 @@
+name: Reusable disk clean up action
+
+on:
+  workflow_call:
+
+jobs:
+  free_runner_disk_space:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Available space before cleanup
+        run: |
+          echo "==> Available space before cleanup"
+          echo
+          df -h
+      -
+        name: Pruning runner
+        run: |
+          set -euo pipefail
+          echo "==> Pruning the runner"
+          echo
+          sudo docker system prune --volumes -f > /dev/null
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo apt-get autoremove -y > /dev/null
+          sudo apt-get clean > /dev/null
+      -
+        name: Available space after cleanup
+        run: |
+          echo "==> Available space after cleanup"
+          echo
+          df -h
