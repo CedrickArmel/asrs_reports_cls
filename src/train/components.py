@@ -2,6 +2,7 @@
 
 import json
 import os
+from typing import Optional
 
 import hopsworks
 import keras
@@ -43,7 +44,7 @@ TD_FORMAT = core.training_data.format
 TD_NEW = core.training_data.new
 TD_VERSION = core.training_data.version
 SEED = core.seed
-STOP_POINT = trainconf.training.stop_points
+STOP_POINTS = trainconf.training.stop_points
 
 project = hopsworks.login()
 fs = project.get_feature_store()
@@ -56,7 +57,49 @@ class Train:
 
     def __init__(
         self,
+        batch: int = BATCH,
+        eval_batch: int = EVAL_BATCH,
+        fg_name: str = FG_NAME,
+        fg_version: int = FG_VERSION,
+        fv_name: str = FV_NAME,
+        fv_version: int = FV_VERSION,
+        labels: list = LABELS,
+        metrics: list = METRICS,
+        model_name: list = MODEL_NAME,
+        num_checkpoints: int = NUM_CHECKPOINTS,
+        optimizer: str = OPTIMIZER,
+        aip_tensorboard: Optional[str] = AIP_TENSORBOARD,
+        tensorboard_hfreq: int = TENSORBOARD_HFREQ,
+        tensorboard_ufreq: int = TENSORBOARD_UFREQ,
+        td_description: str = TD_DESCRIPTION,
+        td_format: str = TD_FORMAT,
+        td_new: bool = TD_NEW,
+        td_version: int = TD_VERSION,
+        seed: int = SEED,
+        stop_points: float = STOP_POINTS,
     ):
+        self.batch = batch
+        self.eval_batch = eval_batch
+        self.fg_name = fg_name
+        self.fg_version = fg_version
+        self.fv_name = fv_name
+        self.fv_version = fv_version
+        self.labels = labels
+        self.metrics = metrics
+        self.model_name = model_name
+        self.num_checkpoints = num_checkpoints
+        self.optimizer = optimizer
+        self.aip_tensorboard = aip_tensorboard
+        self.tensorboard_hfreq = tensorboard_hfreq
+        self.tensorboard_ufreq = tensorboard_ufreq
+        self.td_description = td_description
+        self.td_format = td_format
+        self.td_new = td_new
+        self.td_version = td_version
+        self.seed = seed
+        self.stop_points = stop_points
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.strategy = tf.distribute.MirroredStrategy()
 
     def create_training_data(
@@ -73,8 +116,8 @@ class Train:
 
         try:
             fv = fs.get_feature_view(
-                name=FV_NAME,
-                version=FV_VERSION,
+                name=self.fv_name,
+                version=self.fv_version,
             )
         except RestAPIError as e:
             logger.warning(
@@ -84,14 +127,14 @@ class Train:
             )
             try:
                 fg = fs.get_feature_group(
-                    name=FG_NAME,
-                    version=FG_VERSION,
+                    name=self.fg_name,
+                    version=self.fg_version,
                 )
                 # TODO: Externalise query as a module
                 query = fg.select_all(include_primary_key=False)
                 fv = fs.create_feature_view(
-                    name=FV_NAME,
-                    version=FV_VERSION,
+                    name=self.fv_name,
+                    version=self.fv_version,
                     query=query,
                 )
             except RestAPIError as e2:
@@ -109,25 +152,25 @@ class Train:
         ) = fv.create_train_validation_test_split(
             validation_size=0.3,
             test_size=0.2,
-            description=TD_DESCRIPTION,
-            seed=SEED,
-            data_format=TD_FORMAT,
+            description=self.td_description,
+            seed=self.seed,
+            data_format=self.td_format,
             write_options={"use_spark": True},
         )
         metadata = json.loads(fv.json())
 
-        if (version > TD_VERSION) and TD_NEW:
+        if (version > self.td_version) and self.td_new:
             logger.warning(
                 "⚠️ Using the training data version %s as verion %s \
-                    already exists AND 'td_new' parameter in conf \
-                        have been set to 'True'. to change this behavior, \
+                    already exists AND 'td_new' parameter have been \
+                        set to 'True'. to change this behavior, \
                             set 'td_new' to 'false'.",
                 str(version),
-                str(TD_VERSION),
+                str(self.td_version),
             )
             metadata["training_data_version"] = version
         else:
-            metadata["training_data_version"] = TD_VERSION
+            metadata["training_data_version"] = self.td_version
 
         if not os.path.exists(os.path.dirname(td_metadata_output)):
             os.makedirs(os.path.dirname(td_metadata_output))
@@ -207,7 +250,7 @@ class Train:
         y,
     ):
         x = tf.compat.as_str(x.numpy()[0])
-        x = tokenizer(
+        x = self.tokenizer(
             x,
             None,
             add_special_tokens=True,
@@ -247,14 +290,14 @@ class Train:
             logger.info("🛠️ Initialising model from HuggingFace🤗...🔄")
             with self.strategy.scope():
                 model = Cls.from_pretrained(
-                    MODEL_NAME,
-                    num_labels=len(LABELS),
+                    self.model_name,
+                    num_labels=len(self.labels),
                     from_pt=True,
                 )
                 model.compile(
-                    optimizer=OPTIMIZER,
+                    optimizer=self.optimizer,
                     loss=loss,
-                    metrics=METRICS,
+                    metrics=self.metrics,
                 )
         logger.info("⌛️ Model import completed successfully!✅")
         return model
@@ -299,9 +342,9 @@ class Train:
             )
             .shuffle(
                 buffer_size=tf.data.AUTOTUNE,
-                seed=SEED,
+                seed=self.seed,
             )
-            .batch(BATCH)
+            .batch(self.batch)
             .repeat()
             .cache()
             .prefetch(tf.data.AUTOTUNE)
@@ -317,9 +360,9 @@ class Train:
             )
             .shuffle(
                 buffer_size=tf.data.AUTOTUNE,
-                seed=SEED,
+                seed=self.seed,
             )
-            .batch(EVAL_BATCH)
+            .batch(self.eval_batch)
             .repeat()
             .cache()
             .prefetch(tf.data.AUTOTUNE)
@@ -335,9 +378,9 @@ class Train:
             )
             .shuffle(
                 buffer_size=tf.data.AUTOTUNE,
-                seed=SEED,
+                seed=self.seed,
             )
-            .batch(EVAL_BATCH)
+            .batch(self.eval_batch)
             .repeat()
             .cache()
             .prefetch(tf.data.AUTOTUNE)
@@ -366,9 +409,9 @@ class Train:
         logger.info("⏳ Starting Training task...🔄")
         # TODO: Import metrics as a module
         tensorboard_callback = keras.callbacks.TensorBoard(
-            log_dir=AIP_TENSORBOARD,
-            histogram_freq=TENSORBOARD_HFREQ,
-            update_freq=TENSORBOARD_UFREQ,
+            log_dir=self.aip_tensorboard,
+            histogram_freq=self.tensorboard_hfreq,
+            update_freq=self.tensorboard_ufreq,
         )
         # We can consider only checkpoint after since it's always the best
         # model
@@ -391,8 +434,10 @@ class Train:
         # 1000 because len(ds) is a multiple of 1000
         # Adjust STOP_POINT in the config file to get the effective
         # size you want to train on.
-        total_training_examples = int(STOP_POINT * 1000)
-        steps_per_epoch = total_training_examples // (BATCH * NUM_CHECKPOINTS)
+        total_training_examples = int(self.stop_points * 1000)
+        steps_per_epoch = total_training_examples // (
+            self.batch * self.num_checkpoints
+        )
         model = self._import_model(state)
 
         logger.info("🧠 Training model Training...🔄")
@@ -403,8 +448,8 @@ class Train:
                 tensorboard_callback,
                 checkpoint_callback,
             ],
-            epochs=NUM_CHECKPOINTS,
-            batch_size=BATCH,
+            epochs=self.num_checkpoints,
+            batch_size=self.batch,
             steps_per_epoch=steps_per_epoch,
         )
         eval_scores = model.evaluate(

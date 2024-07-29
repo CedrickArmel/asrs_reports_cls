@@ -38,6 +38,7 @@ pylint = "^3.1.0"
 docker = "^7.0.0"
 black = "^24.4.2"
 flake8-bugbear = "^24.4.26"
+pytest = "^8.3.2"
 
 [tool.pylint.format]
 max-line-length = "88"

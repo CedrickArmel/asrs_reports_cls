@@ -18,6 +18,7 @@ class BasePlatform:
         func: Callable,
         jobname: str,
         template: str,
+        pipeline_parameters: Optional[dict] = None,
         root: Optional[str] = None,
         **kwargs
     ) -> None:
@@ -29,13 +30,16 @@ class BasePlatform:
             template (str, optional): Local path of the pipeline package (the \
                 filename should end with one of the following \
                     .tar.gz, .tgz, .zip, .json).
-            root (Optional[ str ], optional): Location where to store pipeline's \
+            pipeline_parameters (Optional[dict], optional): Parameters to pass to \
+                the pipeline function. Defaults to None.
+            root (Optional[str], optional):  Location where to store pipeline's \
                 artifacts(outputs). Typically a cloud bucket/S3 on the same \
-                    ML platform.
+                    ML platform. Defaults to None.
         """
         self._kwargs = kwargs
         self.func = func
         self.jobname = jobname
+        self.pipeline_parameters = pipeline_parameters
         self.template = template
         self.root = root
 
@@ -50,8 +54,7 @@ class VertexAI(BasePlatform):
         region: Optional[str] = None,
         **kwargs
     ):
-        """_summary_
-
+        """
         Args:
             pipeline_name (str): _description_
             project_id (Optional[ str ], optional): _description_. Defaults to None.
@@ -81,6 +84,7 @@ class VertexAI(BasePlatform):
         compiler.Compiler().compile(
             pipeline_func=self.func,
             package_path=self.template,
+            pipeline_parameters=self.pipeline_parameters,
         )
         logger.info("🛠️ Compiled pipeline successfully!✅")
 
@@ -140,6 +144,7 @@ class Kubeflow(BasePlatform):
         compiler.Compiler().compile(
             pipeline_func=self.func,
             package_path=self.template,
+            pipeline_parameters=self.pipeline_parameters,
         )
         logger.info("🛠️ Compiled pipeline successfully!✅")
 

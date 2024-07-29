@@ -12,6 +12,7 @@ src/**/local_run.py
 *.DS_Store
 !.github/workflows/*
 *.ipynb
+*.pkl
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -19,6 +19,6 @@ components:
     'Deviation - Speed',
     'Ground Excursion',
     'No Specific Anomaly Occurred']
-  target: Anomaly
+  target: anomaly
   test_dataset: "test_data_final.pkl"
   train_dataset: "train_data_final.pkl"
