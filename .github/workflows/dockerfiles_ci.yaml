@@ -14,12 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - 
-        name: Maximize build disk space
-        uses: easimon/maximize-build-space@v10
-        with:
-          remove-android: 'true'
-          remove-codeql: 'true'
-          remove-haskell: 'true'
+        name: Free build disk space
+        run: |
+          set -euo pipefail
+          echo "==> Available space before cleanup"
+          echo
+          df -h
+          echo "==> Pruning the runner"
+          echo
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker system prune --volumes -f > /dev/null
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet
+          sudo apt-get autoremove -y > /dev/null
+          sudo apt-get clean > /dev/null
+          echo
+          echo "==> Available space after cleanup"
+          echo
+          df -h
       -
         name: Checkout
         uses: actions/checkout@v4
@@ -53,13 +69,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/armd64
           build-args: |
             PYTHONVERSION=${{ vars.PYTHONVERSION }}
             BASE_VERSION=${{ vars.BASE_VERSION }}
             DEVICE=${{ matrix.DEVICE }}
           file: Dockerfile
-          push: true
+          push: false
           tags: |
             ${{ vars.IMAGE }}:${{ matrix.DEVICE}}
           cache-from: type=registry,ref=${{ vars.IMAGE }}:${{ matrix.DEVICE}}-cache
