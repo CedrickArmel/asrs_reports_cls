@@ -45,7 +45,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        DEVICE: ['cpu', 'gpu']
+        DEVICE: ['gpu']
     runs-on: ubuntu-latest
     steps:
       -
