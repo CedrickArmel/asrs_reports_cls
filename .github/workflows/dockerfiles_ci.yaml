@@ -11,7 +11,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        DEVICE: ['cpu', 'gpu']
+        DEVICE: ['gpu']
     runs-on: ubuntu-latest
     steps:
       - 
@@ -22,7 +22,6 @@ jobs:
           echo
           df -h
           echo "==> Pruning the runner"
-          echo
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo docker system prune --volumes -f > /dev/null
           sudo rm -rf /opt/ghc
