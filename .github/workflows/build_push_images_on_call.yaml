@@ -57,14 +57,16 @@ jobs:
           df -h
           echo "==> Pruning the runner"
           echo
-          sudo docker system prune --volumes -f
-          sudo rm -rf -v /opt/ghc
-          sudo rm -rf -v /usr/local/.ghcup
-          sudo rm -rf -v /opt/hostedtoolcache/CodeQL
-          sudo rm -rf -v /usr/share/dotnet
-          sudo rm -rf -v /usr/local/lib/android
-          sudo apt-get autoremove -y
-          sudo apt-get clean
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker system prune --volumes -f > /dev/null
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet
+          sudo apt-get autoremove -y > /dev/null
+          sudo apt-get clean > /dev/null
           echo
           echo "==> Available space after cleanup"
           echo
