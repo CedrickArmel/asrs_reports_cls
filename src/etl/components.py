@@ -36,6 +36,28 @@ fs = project.get_feature_store()
 class ETL:
     """ETL pipeline components."""
 
+    def __init__(
+        self,
+        columns: list[str] = COLUMNS,
+        fg_description: str = FG_DESCRIPTION,
+        fg_name: str = FG_NAME,
+        fg_online: bool = FG_ONLINE,
+        fg_version: int = FG_VERSION,
+        gx_suite_name: str = GX_SUITE_NAME,
+        labels: list = LABELS,
+        primary_key: str = PRIMARY_KEY,
+        target: str = TARGET,
+    ):
+        self.columns = columns
+        self.fg_description = fg_description
+        self.fg_name = fg_name
+        self.fg_online = fg_online
+        self.fg_version = fg_version
+        self.gx_suite_name = gx_suite_name
+        self.labels = labels
+        self.primary_key = primary_key
+        self.target = target
+
     def extract(
         self,
         dataset1: str,
@@ -62,9 +84,9 @@ class ETL:
         ).reset_index()
         data = data.dropna(
             axis=0,
-            subset=COLUMNS,
+            subset=self.columns,
         )
-        data = data[COLUMNS]
+        data = data[self.columns]
         data.columns = [col.lower() for col in data.columns]
 
         if not os.path.exists(os.path.dirname(output)):
@@ -105,29 +127,29 @@ class ETL:
             data = pd.read_parquet(f)
 
         # Transform the target colum: "label1;...;labeln" => [1,...,1]
-        data[TARGET] = data[TARGET].apply(
+        data[self.target] = data[self.target].apply(
             lambda cell: encode_cell(
                 cell,
-                LABELS,
+                self.labels,
             )
         )
 
         gxsuite = build_expectation_suite(
-            primary_key=PRIMARY_KEY,
-            name=GX_SUITE_NAME,
-            nlabels=len(LABELS),
-            target=TARGET,
+            primary_key=self.primary_key,
+            name=self.gx_suite_name,
+            nlabels=len(self.labels),
+            target=self.target,
         )
 
         logger.info("⏳ Creating feature group...🔄")
 
         fg = fs.get_or_create_feature_group(
-            name=FG_NAME,
-            version=FG_VERSION,
-            primary_key=PRIMARY_KEY,
-            description=FG_DESCRIPTION,
+            name=self.fg_name,
+            version=self.fg_version,
+            primary_key=[self.primary_key],
+            description=self.fg_description,
             expectation_suite=gxsuite,  # validate data before ingestion
-            online_enabled=FG_ONLINE,
+            online_enabled=self.fg_online,
         )
 
         logger.info("⏳ Ingesting data in feature group...🔄")
@@ -147,7 +169,7 @@ class ETL:
         with open(gx_suite_output, "w", encoding="utf-8") as f:
             f.write(json.dumps(gxsuite.to_json_dict()))
         with open(fg_metadata_output, "w", encoding="utf-8") as f:
-            f.write(json.dumps(fg.to_dict()))
+            f.write(json.dumps(fg.json()))
 
         logger.info("⌛️ Transform and load task completed successfully!✅")
 

@@ -53,7 +53,7 @@ TEST_DATASET = os.path.join(
 def extract(
     dataset1: Input[Dataset],
     dataset2: Input[Dataset],
-    output: Output[Dataset],
+    parquet_output: Output[Dataset],
 ):
     return ContainerSpec(
         image=IMAGE,
@@ -66,7 +66,7 @@ def extract(
             "--dataset2",
             dataset2.path,
             "--output",
-            output.path,
+            parquet_output.path,
         ],
     )
 

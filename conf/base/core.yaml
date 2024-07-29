@@ -6,7 +6,7 @@ feature_group:
   name: anomaly_cls_fg
   online: false
   version: 1
-  primary_key: "ACN"
+  primary_key: "acn"
 
 feature_view:
     name: training_view

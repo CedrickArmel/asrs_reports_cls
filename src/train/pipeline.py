@@ -1,6 +1,7 @@
 """ASRS Report Classification project Train pipeline built using KFP v2 SDK."""
 
 import os
+from typing import Optional, Union
 
 from dotenv import load_dotenv
 from fire import Fire
@@ -15,6 +16,7 @@ from kfp.dsl import (
     importer,
     pipeline,
 )
+from kfp.dsl.pipeline_channel import PipelineParameterChannel
 from omegaconf import OmegaConf
 from wonderwords import RandomWord
 
@@ -86,11 +88,15 @@ def train(
 
 
 @pipeline(pipeline_root=PIPELINE_ROOT)
-def train_pipeline():
+def train_pipeline(
+    checkpoint: Union[PipelineParameterChannel, str],
+    accelerator_limit: Union[PipelineParameterChannel, int],
+    accelerator_type: Union[PipelineParameterChannel, str],
+):
     """Train pipeline."""
     # pylint: disable=E1101,E1120
     import_checkpoint_op = importer(
-        artifact_uri=CHECKPOINT,
+        artifact_uri=checkpoint,
         artifact_class=Model,
         reimport=False,
     )
@@ -98,10 +104,14 @@ def train_pipeline():
     train(
         td_metadata=create_training_data_op.output,
         state=import_checkpoint_op.output,
-    ).add_node_selector_constraint(ACCELERATOR_TYPE).set_accelerator_type(
-        ACCELERATOR_TYPE
+    ).add_node_selector_constraint(
+        accelerator_type
+        if isinstance(accelerator_type, str)
+        else accelerator_type.value
     ).set_accelerator_limit(
-        ACCELERATOR_LIMIT
+        accelerator_limit
+        if isinstance(accelerator_limit, int)
+        else accelerator_limit.value
     )
 
 
@@ -112,13 +122,16 @@ class Pipeline(object):
 
     def __init__(
         self,
-        template: str = TEMPLATE,
-        endpoint: str | None = ENDPOINT,
+        accelerator_type: str = ACCELERATOR_TYPE,
+        accelerator_limt: int = ACCELERATOR_LIMIT,
+        endpoint: Optional[str] = ENDPOINT,
         experiment: str = EXPERIMENT,
         pipeline_name: str = PIPELINE_NAME,
-        project: str | None = PROJECT_ID,
-        region: str | None = REGION,
-        root: str | None = PIPELINE_ROOT,
+        project: Optional[str] = PROJECT_ID,
+        region: Optional[str] = REGION,
+        root: Optional[str] = PIPELINE_ROOT,
+        state: Optional[str] = CHECKPOINT,
+        template: str = TEMPLATE,
     ):
         """The default values are those present in the pipeline YAML \
             config file or defined as environnement variables (.env file).
@@ -126,29 +139,38 @@ class Pipeline(object):
         Args:
             template (str, optional): Path to pipeline YAML definition.\
                 Defaults from config file.
-            endpoint (str | None, optional): URL to the Kubeflow \
+            endpoint (Optional[str], optional): URL to the Kubeflow \
                 endpoint. Defaults to ENDPOINT env. var..
             experiment (str, optional): Experiment name to use. Behaves as \
                 namespace. Defaults from config file.
             pipeline_name (str, optional): Pipeline name to display. \
                 Defaults from config file.
-            project (str | None, optional): GCP PROJECT_ID. Necessary to run \
+            project (Optional[str], optional): GCP PROJECT_ID. Necessary to run \
                 on Vertex AI. Defaults to PROJECT_ID env. var..
-            region (str | None, optional): GCP REGION. Necessary to run \
+            region (Optional[str], optional): GCP REGION. Necessary to run \
                 on Vertex AI. Defaults to REGION env. var..
-            root (str | None, optional): Location where to store pipeline's \
+            root (Optional[str], optional): Location where to store pipeline's \
                 artifacts. Typically a cloud bucket/S3 on the same ML \
                     platform. Defaults to PIPELINE_ROOT env. var..
         """
-        self.template = template
+        self.accelerator_type = accelerator_type
+        self.accelerator_limit = accelerator_limt
         self.endpoint = endpoint
         self.experiment = experiment
         self.pipeline_name = pipeline_name
         self.project = project
         self.region = region
         self.root = root
+        self.state = state
+        self.template = template
+
         self.vertexai = VertexAI(
             func=train_pipeline,
+            pipeline_parameters=dict(
+                checkpoint=self.state,
+                accelerator_limit=self.accelerator_limit,
+                accelerator_type=self.accelerator_type,
+            ),
             jobname=self._get_jobname(),
             pipeline_name=self.pipeline_name,
             template=self.template,
@@ -158,6 +180,11 @@ class Pipeline(object):
         )
         self.kubeflow = Kubeflow(
             func=train_pipeline,
+            pipeline_parameters=dict(
+                checkpoint=self.state,
+                accelerator_limit=self.accelerator_limit,
+                accelerator_type=self.accelerator_type,
+            ),
             jobname=self._get_jobname(),
             template=self.template,
             root=self.root,
@@ -172,6 +199,11 @@ class Pipeline(object):
         compiler.Compiler().compile(
             pipeline_func=train_pipeline,
             package_path=self.template,
+            pipeline_parameters=dict(
+                checkpoint=self.state,
+                accelerator_limit=self.accelerator_limit,
+                accelerator_type=self.accelerator_type,
+            ),
         )
         logger.info("🛠️ Compiled pipeline successfully!✅")
 
