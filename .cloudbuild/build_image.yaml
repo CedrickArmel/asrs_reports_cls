@@ -74,9 +74,10 @@ steps:
     - HOPSWORKS_PROJECT
     - PIPELINE_ROOT
     - RAW_DATA
+  WaitFor: ['-']  
 logsBucket: ${_LOG_BUCKET}
 options:
-  machineType: 'E2_HIGHCPU_8'
+  machineType: 'E2_HIGHCPU_32'
 availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_NUMBER/secrets/AIP_TENSORBOARD_LOG_DIR/versions/1
