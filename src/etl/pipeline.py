@@ -85,7 +85,7 @@ def transform_and_load(
             "transform-and-load",
             "--path",
             data.path,
-            "--gxsuite-output",
+            "--gx-suite-output",
             gx_suite_output.path,
             "--fg-metadata-output",
             fg_metadata_output.path,

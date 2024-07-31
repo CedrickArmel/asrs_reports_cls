@@ -6,6 +6,7 @@
 .python-version
 Dockerfile.base
 .dockerignore
+*.pkl
 **/*.yaml
 !conf/base/**
 !.cloudbuild/**
