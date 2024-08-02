@@ -1,3 +1,5 @@
+##################
+# Import providers
 terraform {
   required_providers {
     google = {
@@ -11,6 +13,8 @@ terraform {
   }
 }
 
+################
+# Init providers
 provider "google" {
   project = var.gcp_project
   region  = var.gcp_region
@@ -23,65 +27,95 @@ provider "google-beta" {
 
 data "google_project" "gcp_project" {}
 
-resource "google_service_account" "gcp_project_sa" {
-  account_id                   = var.gcp_project_sa_account_id
-  display_name                 = "Core Service Account"
+##########################
+# Create Services Accounts (SA)
+resource "google_service_account" "gcp_ml_sa" {
+  account_id                   = var.gcp_ml_sa_account_id
+  display_name                 = "Core ML Service Account to manage necessary services for AI/ML workloads."
   create_ignore_already_exists = true
+}
+
+resource "google_service_account" "gcp_infra_sa" {
+  account_id                   = var.gcp_infra_sa_account_id
+  display_name                 = "Core Service Account to manage infrastructure and IAM"
+  create_ignore_already_exists = true
+}
+
+###################
+# Bind roles to SA
+
+resource "google_project_iam_member" "gcp_platform_editor" {
+  project = var.gcp_project
+  role    = "roles/editor" # TODO: To permissive ! Analyse later in GCP console to fit better the need.
+  member  = google_service_account.gcp_infra_sa.member
 }
 
 resource "google_project_iam_member" "gcp_cloudbuild_builds_editor" {
   project = var.gcp_project
   role    = "roles/cloudbuild.builds.editor"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
 resource "google_project_iam_member" "gcp_cloudbuild_integrations_editor" {
   project = var.gcp_project
   role    = "roles/cloudbuild.integrations.editor"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
 resource "google_project_iam_member" "gcp_secret_accessor" {
   project = var.gcp_project
   role    = "roles/secretmanager.secretAccessor"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
 resource "google_project_iam_member" "gcp_cloudstorage_user" {
   project = var.gcp_project
   role    = "roles/storage.objectUser"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
 resource "google_project_iam_member" "gcp_aiplatform_user" {
   project = var.gcp_project
   role    = "roles/aiplatform.user"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
 resource "google_project_iam_member" "gcp_aiplatform_developer" {
   project = var.gcp_project
   role    = "roles/ml.developer"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
 resource "google_project_iam_member" "gcp_artifactregistry_createonpushwriter" {
   project = var.gcp_project
   role    = "roles/artifactregistry.createOnPushWriter"
-  member  = google_service_account.gcp_project_sa.member
+  member  = google_service_account.gcp_ml_sa.member
 }
 
-resource "google_iam_workload_identity_pool" "gcp_workload_identity_mlops_pool" {
-  workload_identity_pool_id = "mlops-pool"
+#####################################
+# Create Workload identity (WI) Pools
+resource "google_iam_workload_identity_pool" "gcp_wi_mlops_pool" {
+  workload_identity_pool_id = "mlops-pool-v2"
   display_name              = "MLOps pool"
   description               = "Group all externals applications that need communication with GCP to perform CI/CD/CT."
   disabled                  = false
 }
 
-resource "google_iam_workload_identity_pool_provider" "gcp_github_identity_provider" {
-  workload_identity_pool_id          = google_iam_workload_identity_pool.gcp_workload_identity_mlops_pool.workload_identity_pool_id
-  workload_identity_pool_provider_id = "github-actions-oidc"
+resource "google_iam_workload_identity_pool" "gcp_wi_infra_pool" {
+  workload_identity_pool_id = "infra-pool"
+  display_name              = "Infrastructure pool"
+  description               = "Group all externals applications that need communication with GCP to perform infrastructure lifecyle management."
+  disabled                  = false
+}
+
+
+############################
+# Define Identity Providers
+resource "google_iam_workload_identity_pool_provider" "gcp_gha_oidc_provider" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.gcp_wi_mlops_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-actions-oidc-provider"
   display_name                       = "GitHub Actions OIDC Provider"
+  description                        = "Used to authenticate to Google Cloud from GHA"
   disabled                           = false
   attribute_mapping = {
     "google.subject"  = "assertion.sub"
@@ -94,8 +128,34 @@ resource "google_iam_workload_identity_pool_provider" "gcp_github_identity_provi
   }
 }
 
-resource "google_service_account_iam_member" "gcp_project_sa_impersonate" {
-  service_account_id = google_service_account.gcp_project_sa.name
+resource "google_iam_workload_identity_pool_provider" "gcp_hcp_tf_oidc_provider" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.gcp_wi_infra_pool.workload_identity_pool_id
+  workload_identity_pool_provider_id = "hcp-tf-oidc-provider"
+  display_name                       = "HCP Terraform OIDC Provider"
+  description                        = "Used to authenticate to Google Cloud from HCP Terraform"
+  attribute_condition                = "assertion.terraform_organization_name=='${var.hcp_terraform_org_name}'"
+  attribute_mapping = {
+    "google.subject"                     = "assertion.sub"
+    "attribute.terraform_workspace_id"   = "assertion.terraform_workspace_id"
+    "attribute.terraform_full_workspace" = "assertion.terraform_full_workspace"
+  }
+  oidc {
+    issuer_uri = "https://app.terraform.io"
+  }
+}
+
+
+################################
+# SA impersonations by providers
+
+resource "google_service_account_iam_member" "gcp_ml_sa_impersonate_by_gha_oidc_provider" {
+  service_account_id = google_service_account.gcp_ml_sa.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.gcp_workload_identity_mlops_pool.name}/*"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.gcp_wi_mlops_pool.name}/*"
+}
+
+resource "google_service_account_iam_member" "gcp_infra_sa_impersonate_by_hcp_tf_oidc_provider" {
+  service_account_id = google_service_account.gcp_ml_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.gcp_wi_infra_pool.name}/*"
 }
