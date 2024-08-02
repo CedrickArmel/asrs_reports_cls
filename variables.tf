@@ -18,23 +18,17 @@ variable "gha_assertion_actor" {
   default     = "CedrickArmel"
 }
 
-variable "hcp_terraform_org_name" {
-  description = "Organization name in HCP Terraform Cloud"
-  type        = string
-  sensitive   = true
-}
-
 
 #########
 # Secrets
 variable "gcp_infra_sa_account_id" {
-  description = "value"
+  description = "Core Infra LC management SA"
   type        = string
   sensitive   = true
 }
 
 variable "gcp_ml_sa_account_id" {
-  description = "Core project SA"
+  description = "Core ML tasks SA"
   type        = string
   sensitive   = true
 }
@@ -47,6 +41,18 @@ variable "gcp_project" {
 
 variable "gcp_region" {
   description = "Google Cloud region to deploy on"
+  type        = string
+  sensitive   = true
+}
+
+variable "hcp_terraform_org_name" {
+  description = "Organization name in HCP Terraform Cloud"
+  type        = string
+  sensitive   = true
+}
+
+variable "hcp_terraform_ws_id" {
+  description = "Project's worksapce in HCP Terraform Cloud"
   type        = string
   sensitive   = true
 }

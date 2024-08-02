@@ -95,14 +95,14 @@ resource "google_project_iam_member" "gcp_artifactregistry_createonpushwriter" {
 #####################################
 # Create Workload identity (WI) Pools
 resource "google_iam_workload_identity_pool" "gcp_wi_mlops_pool" {
-  workload_identity_pool_id = "mlops-pool-v2"
+  workload_identity_pool_id = "mlops-pool-v3"
   display_name              = "MLOps pool"
   description               = "Group all externals applications that need communication with GCP to perform CI/CD/CT."
   disabled                  = false
 }
 
 resource "google_iam_workload_identity_pool" "gcp_wi_infra_pool" {
-  workload_identity_pool_id = "infra-pool"
+  workload_identity_pool_id = "infra-pool-v1"
   display_name              = "Infrastructure pool"
   description               = "Group all externals applications that need communication with GCP to perform infrastructure lifecyle management."
   disabled                  = false
@@ -135,9 +135,10 @@ resource "google_iam_workload_identity_pool_provider" "gcp_hcp_tf_oidc_provider"
   description                        = "Used to authenticate to Google Cloud from HCP Terraform"
   attribute_condition                = "assertion.terraform_organization_name=='${var.hcp_terraform_org_name}'"
   attribute_mapping = {
-    "google.subject"                     = "assertion.sub"
-    "attribute.terraform_workspace_id"   = "assertion.terraform_workspace_id"
-    "attribute.terraform_full_workspace" = "assertion.terraform_full_workspace"
+    "google.subject"                        = "assertion.sub"
+    "attribute.terraform_workspace_id"      = "assertion.terraform_workspace_id"
+    "attribute.terraform_full_workspace"    = "assertion.terraform_full_workspace"
+    "attribute.terraform_organization_name" = "assertion.terraform_organization_name"
   }
   oidc {
     issuer_uri = "https://app.terraform.io"
@@ -155,7 +156,43 @@ resource "google_service_account_iam_member" "gcp_ml_sa_impersonate_by_gha_oidc_
 }
 
 resource "google_service_account_iam_member" "gcp_infra_sa_impersonate_by_hcp_tf_oidc_provider" {
-  service_account_id = google_service_account.gcp_ml_sa.name
+  service_account_id = google_service_account.gcp_infra_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.gcp_wi_infra_pool.name}/*"
+}
+
+#################################
+# Setup HCP Terraform to use WIF
+resource "tfe_variable_set" "gcp_hcp_wif_sa_variable_set" {
+  name         = google_service_account.gcp_infra_sa.account_id
+  description  = "Workload identity federation configuration for ${google_service_account.gcp_infra_sa.name} impersonation"
+  organization = var.hcp_terraform_org_name
+}
+
+resource "tfe_workspace_variable_set" "gcp_hcp_wif_sa_ws_variable_set" {
+  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
+  workspace_id    = var.hcp_terraform_ws_id
+}
+
+resource "tfe_variable" "gcp_hcp_tf_provider_auth" {
+  key             = "TFC_GCP_PROVIDER_AUTH"
+  value           = "true"
+  category        = "env"
+  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
+}
+
+resource "tfe_variable" "gcp_hcp_tf_sa_email" {
+  sensitive       = true
+  key             = "TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"
+  value           = google_service_account.gcp_infra_sa.email
+  category        = "env"
+  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
+}
+
+resource "tfe_variable" "gcp_hcp_tf_provider_name" {
+  sensitive       = true
+  key             = "TFC_GCP_WORKLOAD_PROVIDER_NAME"
+  value           = google_iam_workload_identity_pool_provider.gcp_hcp_tf_oidc_provider.name
+  category        = "env"
+  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
 }
