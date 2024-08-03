@@ -21,6 +21,17 @@ variable "gha_assertion_actor" {
 
 #########
 # Secrets
+variable "gcp_hcp_wif_sa_variable_set_id" {
+  description = "HCP Terraform WIF variable set id"
+  type        = string
+  sensitive   = true
+}
+
+variable "gcp_iam_sa" {
+  description = "GCP IAM and Infra Management SA"
+  type        = string
+  sensitive   = true
+}
 variable "gcp_infra_sa_account_id" {
   description = "Core Infra LC management SA"
   type        = string
