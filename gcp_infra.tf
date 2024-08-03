@@ -1,6 +1,13 @@
 #####################
 # Import requirements
 terraform {
+  cloud {
+    organization = "mienmo"
+
+    workspaces {
+      name = "asrs-report-cls"
+    }
+  }
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -82,7 +89,7 @@ resource "google_project_iam_member" "gcp_artifactregistry_createonpushwriter" {
 #####################################
 # Create Workload identity (WI) Pools
 resource "google_iam_workload_identity_pool" "gcp_wi_mlops_pool" {
-  workload_identity_pool_id = "mlops-pool-v4"
+  workload_identity_pool_id = "mlops-pool-v10"
   display_name              = "MLOps pool"
   description               = "Group all externals applications that need communication with GCP to perform CI/CD/CT."
   disabled                  = false
