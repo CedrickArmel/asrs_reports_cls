@@ -1,5 +1,5 @@
-##################
-# Import providers
+#####################
+# Import requirements
 terraform {
   required_providers {
     google = {
@@ -35,21 +35,8 @@ resource "google_service_account" "gcp_ml_sa" {
   create_ignore_already_exists = true
 }
 
-resource "google_service_account" "gcp_infra_sa" {
-  account_id                   = var.gcp_infra_sa_account_id
-  display_name                 = "Core Service Account to manage infrastructure and IAM"
-  create_ignore_already_exists = true
-}
-
 ###################
 # Bind roles to SA
-
-resource "google_project_iam_member" "gcp_platform_editor" {
-  project = var.gcp_project
-  role    = "roles/editor" # TODO: To permissive ! Analyse later in GCP console to fit better the need.
-  member  = google_service_account.gcp_infra_sa.member
-}
-
 resource "google_project_iam_member" "gcp_cloudbuild_builds_editor" {
   project = var.gcp_project
   role    = "roles/cloudbuild.builds.editor"
@@ -95,19 +82,11 @@ resource "google_project_iam_member" "gcp_artifactregistry_createonpushwriter" {
 #####################################
 # Create Workload identity (WI) Pools
 resource "google_iam_workload_identity_pool" "gcp_wi_mlops_pool" {
-  workload_identity_pool_id = "mlops-pool-v3"
+  workload_identity_pool_id = "mlops-pool-v4"
   display_name              = "MLOps pool"
   description               = "Group all externals applications that need communication with GCP to perform CI/CD/CT."
   disabled                  = false
 }
-
-resource "google_iam_workload_identity_pool" "gcp_wi_infra_pool" {
-  workload_identity_pool_id = "infra-pool-v1"
-  display_name              = "Infrastructure pool"
-  description               = "Group all externals applications that need communication with GCP to perform infrastructure lifecyle management."
-  disabled                  = false
-}
-
 
 ############################
 # Define Identity Providers
@@ -128,71 +107,10 @@ resource "google_iam_workload_identity_pool_provider" "gcp_gha_oidc_provider" {
   }
 }
 
-resource "google_iam_workload_identity_pool_provider" "gcp_hcp_tf_oidc_provider" {
-  workload_identity_pool_id          = google_iam_workload_identity_pool.gcp_wi_infra_pool.workload_identity_pool_id
-  workload_identity_pool_provider_id = "hcp-tf-oidc-provider"
-  display_name                       = "HCP Terraform OIDC Provider"
-  description                        = "Used to authenticate to Google Cloud from HCP Terraform"
-  attribute_condition                = "assertion.terraform_organization_name=='${var.hcp_terraform_org_name}'"
-  attribute_mapping = {
-    "google.subject"                        = "assertion.sub"
-    "attribute.terraform_workspace_id"      = "assertion.terraform_workspace_id"
-    "attribute.terraform_full_workspace"    = "assertion.terraform_full_workspace"
-    "attribute.terraform_organization_name" = "assertion.terraform_organization_name"
-  }
-  oidc {
-    issuer_uri = "https://app.terraform.io"
-  }
-}
-
-
 ################################
 # SA impersonations by providers
-
 resource "google_service_account_iam_member" "gcp_ml_sa_impersonate_by_gha_oidc_provider" {
   service_account_id = google_service_account.gcp_ml_sa.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.gcp_wi_mlops_pool.name}/*"
-}
-
-resource "google_service_account_iam_member" "gcp_infra_sa_impersonate_by_hcp_tf_oidc_provider" {
-  service_account_id = google_service_account.gcp_infra_sa.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.gcp_wi_infra_pool.name}/*"
-}
-
-#################################
-# Setup HCP Terraform to use WIF
-resource "tfe_variable_set" "gcp_hcp_wif_sa_variable_set" {
-  name         = google_service_account.gcp_infra_sa.account_id
-  description  = "Workload identity federation configuration for ${google_service_account.gcp_infra_sa.name} impersonation"
-  organization = var.hcp_terraform_org_name
-}
-
-resource "tfe_workspace_variable_set" "gcp_hcp_wif_sa_ws_variable_set" {
-  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
-  workspace_id    = var.hcp_terraform_ws_id
-}
-
-resource "tfe_variable" "gcp_hcp_tf_provider_auth" {
-  key             = "TFC_GCP_PROVIDER_AUTH"
-  value           = "true"
-  category        = "env"
-  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
-}
-
-resource "tfe_variable" "gcp_hcp_tf_sa_email" {
-  sensitive       = true
-  key             = "TFC_GCP_RUN_SERVICE_ACCOUNT_EMAIL"
-  value           = google_service_account.gcp_infra_sa.email
-  category        = "env"
-  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
-}
-
-resource "tfe_variable" "gcp_hcp_tf_provider_name" {
-  sensitive       = true
-  key             = "TFC_GCP_WORKLOAD_PROVIDER_NAME"
-  value           = google_iam_workload_identity_pool_provider.gcp_hcp_tf_oidc_provider.name
-  category        = "env"
-  variable_set_id = tfe_variable_set.gcp_hcp_wif_sa_variable_set.id
 }
