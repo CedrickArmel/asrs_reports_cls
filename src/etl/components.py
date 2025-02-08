@@ -3,7 +3,6 @@
 import json
 import os
 
-import hopsworks
 import pandas as pd
 from dotenv import load_dotenv
 from fire import Fire
@@ -11,10 +10,11 @@ from omegaconf import OmegaConf
 
 from src.etl.transformations import encode_cell
 from src.etl.validate_features import build_expectation_suite
-from src.utilitis.core import get_logger
+from src.utilitis.core import get_feature_store_connection, get_logger
+
+load_dotenv()
 
 logger = get_logger(__name__)
-load_dotenv()
 
 core = OmegaConf.load("conf/base/core.yaml")
 etlconf = OmegaConf.load("conf/base/etl.yaml")
@@ -28,9 +28,6 @@ GX_SUITE_NAME = core.gx_suite.name
 LABELS = etlconf.components.labels
 PRIMARY_KEY = core.feature_group.primary_key
 TARGET = etlconf.components.target
-
-project = hopsworks.login()
-fs = project.get_feature_store()
 
 
 class ETL:
@@ -118,6 +115,8 @@ class ETL:
                 group metadata
         """
         logger.info("⏳ Starting Transform and load task...🔄")
+
+        fs = get_feature_store_connection()
 
         with open(
             path,

@@ -1,4 +1,4 @@
 """__init__ module.
 """
 
-__all__ = ["gcpstorage"]
+__all__ = ["core", "gcpstorage", "platforms"]

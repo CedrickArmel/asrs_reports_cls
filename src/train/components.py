@@ -4,7 +4,6 @@ import json
 import os
 from typing import Optional
 
-import hopsworks
 import keras
 import numpy as np
 import tensorflow as tf
@@ -15,11 +14,11 @@ from omegaconf import OmegaConf
 from transformers import AutoTokenizer
 
 from src.train.models import CustomModelForSequenceClassification as Cls
-from src.utilitis.core import get_logger
-
-logger = get_logger(__name__)
+from src.utilitis.core import get_feature_store_connection, get_logger
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 core = OmegaConf.load("conf/base/core.yaml")
 etlconf = OmegaConf.load("conf/base/etl.yaml")
@@ -45,11 +44,6 @@ TD_NEW = core.training_data.new
 TD_VERSION = core.training_data.version
 SEED = core.seed
 STOP_POINTS = trainconf.training.stop_points
-
-project = hopsworks.login()
-fs = project.get_feature_store()
-
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
 
 class Train:
@@ -113,6 +107,8 @@ class Train:
                 the training data metadata artefact.
         """
         logger.info("⏳ Starting Create Training Data task...🔄")
+
+        fs = get_feature_store_connection()
 
         try:
             fv = fs.get_feature_view(
@@ -196,6 +192,9 @@ class Train:
         Returns:
             Tuple[pd.DataFrame]: (Features Dataframe, Target DataFrame).
         """
+
+        fs = get_feature_store_connection()
+
         with open(
             td_metadata_in,
             "r",
@@ -217,9 +216,10 @@ class Train:
             y_train,
             y_val,
             y_test,
-        ) = fv.get_train_validation_test_split(
+        ) = fv.get_train_validation_test_split(  # pylint: disable=C0103
             training_dataset_version=td_version
         )
+
         train_data = (
             X_train,
             y_train,

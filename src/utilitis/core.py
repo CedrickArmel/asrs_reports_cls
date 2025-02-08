@@ -2,6 +2,9 @@
 
 import logging
 
+import hopsworks
+from hsfs.feature_store import FeatureStore
+
 
 def get_logger(
     name: str,
@@ -22,3 +25,14 @@ def get_logger(
     )
     logger = logging.getLogger(name)
     return logger
+
+
+def get_feature_store_connection() -> FeatureStore:
+    """Establish connection to the feature store.
+
+    Returns:
+        FeatureStore: Connection to the feature store.
+    """
+    project = hopsworks.login()
+    fs = project.get_feature_store()
+    return fs
